@@ -1,0 +1,30 @@
+---
+title: "eds222-finalproject"
+format: html
+editor: visual
+---
+
+## 
+
+```{r}
+library(tidyverse)
+library(stars)
+```
+
+```{r}
+
+# Setting my filepaths
+rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject")
+data <- file.path(rootdir,"data")
+
+#setwd(file.path(rootdir,"assignments","assignment-3-javipatron"))
+
+dataset <- 'toc_20160000000000-0000000000.tif' 
+
+one <- read_stars(file.path(data, dataset))
+one
+
+class(one)
+
+
+```
