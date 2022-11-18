@@ -10,6 +10,8 @@ editor: visual
 library(tidyverse)
 library(here)
 library(janitor)
+library(RColorBrewer)
+library(viridis)
 
 ```
 
@@ -24,18 +26,20 @@ data <- file.path(rootdir,"data")
 ```{r}
 #Load data Mangrove Data
 
-mangrove_df <- read_csv(here::here("data","Monitoring_data_Javier.csv")) |> clean_names()
+mangrove_df <- read_csv(here::here("data","monitoring_siteA_data_javier.csv")) |> clean_names()
+
+
+mangrove_df_b <- read_csv(here::here("data","monitoring_siteB_data_javier.csv")) |> clean_names()
+
 
 ```
 
 ```{r}
-#Wrangle the data
+#Wranggle the data
 
 dim(mangrove_df)
 names(mangrove_df)
-
 skimr::skim(mangrove_df)
-
 summary(mangrove_df)
 
 unique(mangrove_df$plantation_year)
@@ -47,17 +51,34 @@ class(mangrove_df$plantation_year)
 ```
 
 ```{r}
+#Changing some data
 mangrove_df$height_cm[1253] <- 112
 mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
+mangrove_df$plot <- as.character(mangrove_df$plot)
+mangrove_df$plot_size_m2 <- as.character(mangrove_df$plot_size_m2,total_tree_kg)
 
 ```
 
 ```{r}
 #Plotting
+ggplot(mangrove_df, aes(x=height_cm, y = total_tree_kg_c, color = plantation_year)) +
+  facet_wrap(~plantation_year) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree kg C vs Height")
+
+ggplot(mangrove_df, aes(x=cd_chatting_m, y = total_tree_kg_c, color = plantation_year)) +
+  facet_wrap(~plantation_year) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree kg C vs Size")
 
 ggplot(mangrove_df, aes(x=height_cm, y = total_tree_kg_c, color = plantation_year)) +
-  geom_point(alpha = 0.5)
+  facet_wrap(~plantation_year) +
+  geom_point(alpha = 0.7)
+
+
 ```
+
+Create a table that contains the total number of plots and total number of rows per plantation year.
 
 ```{r}
 
@@ -68,4 +89,48 @@ mangrove_summary <- mangrove_df |>
 
 summary(mangrove_summary)
 sum(mangrove_summary$tot_samples)
+
+plots <- mangrove_df |> 
+  group_by(plantation_year,plot) |> 
+  summarise(plot = unique(plot),
+            sample_count = n())  
+
+mangrove_plots_summary <- mangrove_df |> 
+  group_by(plantation_year, plot_size_m2) |> 
+  summarise(plot_size_m2 = unique(plot_size_m2),
+            plot_count = length(unique(plot)),
+            tot_samples = n(),
+            mean_plant_size_m = mean(cd_chatting_m),
+            mean_tot_carbon_kg_c = mean(total_tree_kg_c))
+
+skim <- mangrove_df |> 
+  group_by(plantation_year) |>
+  select(cd_chatting_m,total_tree_kg_c) |> 
+  skimr::skim()
+
+```
+
+```{r}
+n_colors <- 50
+palette <- viridis_pal(option = "D")(n_colors)
+
+palette
+
+
+ggplot(plots, aes(x = plantation_year, 
+                  y = sample_count, 
+                  fill = plot)) + 
+  geom_col() +
+  scale_fill_manual(values = col)
+
+
+
+```
+
+```{r}
+
+color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+
+
+col = sample(color, 50)
 ```
