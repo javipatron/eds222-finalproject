@@ -8,23 +8,64 @@ editor: visual
 
 ```{r}
 library(tidyverse)
-library(stars)
+library(here)
+library(janitor)
+
 ```
 
 ```{r}
 
-# Setting my filepaths
+#Setting my filepaths
 rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject")
 data <- file.path(rootdir,"data")
 
-#setwd(file.path(rootdir,"assignments","assignment-3-javipatron"))
+```
 
-dataset <- 'toc_20160000000000-0000000000.tif' 
+```{r}
+#Load data Mangrove Data
 
-one <- read_stars(file.path(data, dataset))
-one
+mangrove_df <- read_csv(here::here("data","Monitoring_data_Javier.csv")) |> clean_names()
 
-class(one)
+```
+
+```{r}
+#Wrangle the data
+
+dim(mangrove_df)
+names(mangrove_df)
+
+skimr::skim(mangrove_df)
+
+summary(mangrove_df)
+
+unique(mangrove_df$plantation_year)
+unique(mangrove_df$plot_size_m2)
+
+class(mangrove_df$plantation_year)
 
 
+```
+
+```{r}
+mangrove_df$height_cm[1253] <- 112
+mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
+
+```
+
+```{r}
+#Plotting
+
+ggplot(mangrove_df, aes(x=height_cm, y = total_tree_kg_c, color = plantation_year)) +
+  geom_point(alpha = 0.5)
+```
+
+```{r}
+
+mangrove_summary <- mangrove_df |> 
+  group_by(plantation_year) |> 
+  summarise(plot_count = length(unique(plot)),
+          tot_samples = n())
+
+summary(mangrove_summary)
+sum(mangrove_summary$tot_samples)
 ```
