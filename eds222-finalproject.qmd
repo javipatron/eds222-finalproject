@@ -1,22 +1,29 @@
 ---
-title: "eds222-finalproject"
-format: html
-editor: visual
+title: "EDS 222: Final Project"
+subtitle: "Mangrove Blue Carbon"
+author: "Javier Patrón"
+date: "`r Sys.Date()`"
+output:
+  tufte::tufte_html: default
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: xelatex
+  tufte::tufte_book:
+    citation_package: natbib
+    latex_engine: xelatex
 ---
 
-## 
+## Introduccion:
 
 ```{r}
 library(tidyverse)
 library(here)
 library(janitor)
-library(RColorBrewer)
-library(viridis)
+library(knitr)
 
 ```
 
 ```{r}
-
 #Setting my filepaths
 rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject")
 data <- file.path(rootdir,"data")
@@ -25,9 +32,7 @@ data <- file.path(rootdir,"data")
 
 ```{r}
 #Load data Mangrove Data
-
 mangrove_df <- read_csv(here::here("data","monitoring_siteA_data_javier.csv")) |> clean_names()
-
 
 mangrove_df_b <- read_csv(here::here("data","monitoring_siteB_data_javier.csv")) |> clean_names()
 
@@ -35,8 +40,7 @@ mangrove_df_b <- read_csv(here::here("data","monitoring_siteB_data_javier.csv"))
 ```
 
 ```{r}
-#Wranggle the data
-
+#Wranggle the data for table A
 dim(mangrove_df)
 names(mangrove_df)
 skimr::skim(mangrove_df)
@@ -55,30 +59,37 @@ class(mangrove_df$plantation_year)
 mangrove_df$height_cm[1253] <- 112
 mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
 mangrove_df$plot <- as.character(mangrove_df$plot)
-mangrove_df$plot_size_m2 <- as.character(mangrove_df$plot_size_m2,total_tree_kg)
+mangrove_df$plot_size_m2 <- as.factor(mangrove_df$plot_size_m2)
 
 ```
 
 ```{r}
 #Plotting
-ggplot(mangrove_df, aes(x=height_cm, y = total_tree_kg_c, color = plantation_year)) +
+ggplot(mangrove_df, aes(x=plot_size_m2, y = total_tree_mg_c_ha, color = plantation_year)) +
   facet_wrap(~plantation_year) +
   geom_point(alpha = 0.7) +
-  labs(title = "Tree kg C vs Height")
-
-ggplot(mangrove_df, aes(x=cd_chatting_m, y = total_tree_kg_c, color = plantation_year)) +
-  facet_wrap(~plantation_year) +
-  geom_point(alpha = 0.7) +
-  labs(title = "Tree kg C vs Size")
-
-ggplot(mangrove_df, aes(x=height_cm, y = total_tree_kg_c, color = plantation_year)) +
-  facet_wrap(~plantation_year) +
-  geom_point(alpha = 0.7)
+  labs(title = "Sample Plots - Site A",
+       subtitle = "Tree kg C vs Height") +
+    theme(
+    plot.title = element_text(face = "bold", size = 14),
+    legend.background = element_rect(fill = "gray98", size = 4, colour = "gray92"),
+    axis.text.x = element_text(angle=-45, hjust = 0),
+    panel.background = element_rect(fill = "gray91"),
+    panel.grid.major = element_line(colour = "grey70", size = 0.2),
+    panel.grid.minor = element_line(color = "gray88"))
 
 
 ```
 
-Create a table that contains the total number of plots and total number of rows per plantation year.
+```{r}
+#Ploting variables of interest
+ggplot(mangrove_df, aes(x=cd_chatting_m, y = total_tree_kg_c, color = plantation_year)) +
+  facet_wrap(~plantation_year) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Carbon Sequastration (kg/tree)  vs Size")
+```
+
+Create a table that is grouped by the each plantation year and contains the total number of sample plots and the total number of samples trees per plantation.
 
 ```{r}
 
@@ -86,15 +97,29 @@ mangrove_summary <- mangrove_df |>
   group_by(plantation_year) |> 
   summarise(plot_count = length(unique(plot)),
           tot_samples = n())
+          
 
-summary(mangrove_summary)
-sum(mangrove_summary$tot_samples)
+knitr::kable(mangrove_summary)
+
+```
+
+Create a table that shows the samples per each plot
+
+```{r}
 
 plots <- mangrove_df |> 
   group_by(plantation_year,plot) |> 
   summarise(plot = unique(plot),
             sample_count = n())  
 
+knitr::kable(plots)
+
+
+```
+
+Create a table of samples per plot but grouping by sample size
+
+```{r}
 mangrove_plots_summary <- mangrove_df |> 
   group_by(plantation_year, plot_size_m2) |> 
   summarise(plot_size_m2 = unique(plot_size_m2),
@@ -103,34 +128,141 @@ mangrove_plots_summary <- mangrove_df |>
             mean_plant_size_m = mean(cd_chatting_m),
             mean_tot_carbon_kg_c = mean(total_tree_kg_c))
 
-skim <- mangrove_df |> 
-  group_by(plantation_year) |>
-  select(cd_chatting_m,total_tree_kg_c) |> 
-  skimr::skim()
+kable(mangrove_plots_summary)
+
+```
+
+Lets focus on the 2017 plantation year
+
+```{r}
+mangrove_2017 <- mangrove_df |> 
+  filter(plantation_year == 2017) |> 
+  select(plot, plot_size_m2, cd_chatting_m,total_tree_kg_ctotal_tree_mg_c_ha)
+
+kable(mangrove_2017)
 
 ```
 
 ```{r}
-n_colors <- 50
-palette <- viridis_pal(option = "D")(n_colors)
+plots_2017 <- mangrove_2017 |> 
+  group_by(plot, plot_size_m2) |> 
+  summarise(sample_count = n())
 
-palette
+kable(plots_2017)
+
+```
+
+```{r}
+plots_percent_2017 <- mangrove_2017 |> 
+  group_by(plot_size_m2) |> 
+  summarise(plot_count = length(unique(plot)),
+            tot_samples = n()) |> 
+  mutate(plot_percentage = round((plot_count/sum(plot_count)*100),2),
+         tot_samples_percentage = round((tot_samples / sum(tot_samples)*100),2))
+
+kable(plots_percent_2017,
+      caption = "TABLE 5: 2017 Sample Plots Percentages")
+```
 
 
-ggplot(plots, aes(x = plantation_year, 
-                  y = sample_count, 
-                  fill = plot)) + 
-  geom_col() +
-  scale_fill_manual(values = col)
+```{r}
+#Statistical Table with interesing variables
+mangrove_plots_2017 <- mangrove_2017 |> 
+  group_by(plot_size_m2) |> 
+  summarise(tot_samples = n(),
+            plot_count = length(unique(plot)),
+            mean_chatting_size_m = mean(cd_chatting_m),
+            mean_tree_c_kg = mean(total_tree_kg_c),
+            mean_tree_c_ha_mg = mean(total_tree_mg_c_ha),
+            sd_chatting_size_m = sd(cd_chatting_m),
+            sd_tree_c_kg = mean(total_tree_kg_c),
+            sd_tree_c_ha_mg = sd(total_tree_mg_c_ha)) |> 
+  mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
 
+kable(mangrove_plots_2017)
+
+```
+
+
+Option 1 For variable Selection. 
+Total Carbon per tree vs Tree Size
+```{r}
+#Variable Total Carbon per tree (kg)
+mangrove_2017 |> 
+  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c)) +
+  geom_point(alpha = 0.7, color = "darkolivegreen") +
+  labs(title = "Tree kg C vs Size")
+```
+
+```{r}
+mangrove_2017 |> 
+  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c, col = plot_size_m2)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree kg C vs Size") +
+  facet_wrap(~ plot_size_m2)
+
+```
+
+Option 2 For variable Selection
+
+Total Carbon per tree for Hectare vs Sample Plot Type
+```{r}
+#Variable Total Carbon per tree (mg)
+mangrove_2017 |> 
+  ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha ,color = plot_size_m2)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree mg C vs Plot Type")
+```
+
+
+Starting the Statistical analysis
+
+```{r}
+#Histogram of Total Carbon per Tree/Ha
+ggplot(mangrove_2017, aes(x=total_tree_kg_c)) +
+  geom_histogram() +
+  facet_wrap(~plot_size_m2)
+```
+
+```{r}
+
+ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha)) +
+  geom_histogram() + 
+  facet_wrap(~plot_size_m2)#, ncol = 1)
+```
+
+
+-   Create a table and calculate the mean and sd on total ca per hectar for each plot size
+
+ Plot Type 25m2 vs 154m2
+```{r}
+#Calulate Point Estimate
+names(mangrove_plots_2017)
+point_est_1 = (mangrove_plots_2017$mean_tree_c_ha_mg[3] - stat_plots_2017$mean_tree_c_ha_mg[1])
+print(point_est_1)
+
+```
+
+```{r}
+#Calculate the lm of total carbon per tree in relation to their size
+names(mangrove_2017)
+
+lm_carbon <- lm(total_tree_kg_c ~ cd_chatting_m, data=mangrove_2017) |> 
+  summary()
 
 
 ```
 
 ```{r}
 
-color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+crit_val_95 <- qnorm(0.025, lower.tail = FALSE)
+PE_carbon <- lm_carbon$coefficients[,"Estimate"][2]
+SE_carbon <- lm_carbon$coefficients[,"Std. Error"][2]
 
+ci_lower = round(PE_carbon - crit_val_95 * SE_carbon, 2)
+ci_upper = round(PE_carbon + crit_val_95 * SE_carbon, 2)
 
-col = sample(color, 50)
+ci_lower
+ci_upper
+
 ```
