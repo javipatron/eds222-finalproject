@@ -13,8 +13,6 @@ output:
     latex_engine: xelatex
 ---
 
-## Introduccion:
-
 ```{r}
 library(tidyverse)
 library(here)
@@ -29,6 +27,11 @@ rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-fin
 data <- file.path(rootdir,"data")
 
 ```
+
+
+## Introduccion:
+
+Question and why is important:
 
 ```{r}
 #Load data Mangrove Data
@@ -51,8 +54,13 @@ unique(mangrove_df$plot_size_m2)
 
 class(mangrove_df$plantation_year)
 
-
 ```
+
+```{r}
+summary(mangrove_df_b)
+names(mangrove_df_b)
+```
+
 
 ```{r}
 #Changing some data
@@ -63,6 +71,7 @@ mangrove_df$plot_size_m2 <- as.factor(mangrove_df$plot_size_m2)
 
 ```
 
+Create Plots to visualize the data
 ```{r}
 #Plotting
 ggplot(mangrove_df, aes(x=plot_size_m2, y = total_tree_mg_c_ha, color = plantation_year)) +
@@ -80,9 +89,12 @@ ggplot(mangrove_df, aes(x=plot_size_m2, y = total_tree_mg_c_ha, color = plantati
 
 
 ```
+Create plots that are relevant to your questions
 
+Carbon Sequastration (kg/tree) vs Size
+(_ cd_chatting_m, y = total_tree_kg_c _)
 ```{r}
-#Ploting variables of interest
+#Plotting variables of interest
 ggplot(mangrove_df, aes(x=cd_chatting_m, y = total_tree_kg_c, color = plantation_year)) +
   facet_wrap(~plantation_year) +
   geom_point(alpha = 0.7) +
@@ -135,11 +147,15 @@ kable(mangrove_plots_summary)
 Lets focus on the 2017 plantation year
 
 ```{r}
+# Potential need to rename the plots as "Sample Plot#1", "Sample plot #2", etc
+# Potential need to rename the plot size as "25m2", "77m2", "154m2"
+
 mangrove_2017 <- mangrove_df |> 
   filter(plantation_year == 2017) |> 
-  select(plot, plot_size_m2, cd_chatting_m,total_tree_kg_ctotal_tree_mg_c_ha)
+  select(plot, plot_size_m2, cd_chatting_m,total_tree_kg_c,total_tree_mg_c_ha)
 
 kable(mangrove_2017)
+
 
 ```
 
@@ -164,9 +180,10 @@ kable(plots_percent_2017,
       caption = "TABLE 5: 2017 Sample Plots Percentages")
 ```
 
+-   Create a table and calculate the mean and sd on total ca per hectare for each plot size
 
 ```{r}
-#Statistical Table with interesing variables
+#Statistical Table with interesting variables
 mangrove_plots_2017 <- mangrove_2017 |> 
   group_by(plot_size_m2) |> 
   summarise(tot_samples = n(),
@@ -177,35 +194,51 @@ mangrove_plots_2017 <- mangrove_2017 |>
             sd_chatting_size_m = sd(cd_chatting_m),
             sd_tree_c_kg = mean(total_tree_kg_c),
             sd_tree_c_ha_mg = sd(total_tree_mg_c_ha)) |> 
-  mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
+  mutate(plot_size_m2 = c("25m2", "77m2", "154m2")) |> 
+  mutate(plot_size_m2 = factor(plot_size_m2, levels = plot_size_m2)) 
 
 kable(mangrove_plots_2017)
+```
+
+```{r}
+
+
+ggplot(mangrove_plots_2017, aes(x=plot_size_m2 , y=mean_chatting_size_m)) +
+  geom_col() +
+  labs(title = "Tree Size means")
+
+ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c_kg)) +
+  geom_col() +
+  labs(title = "Carbon mean per tree")
+
+
+ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c_ha_mg)) +
+  geom_col() +
+  labs(title = "Carbon mean per tree per ha")
 
 ```
 
 
 Option 1 For variable Selection. 
-Total Carbon per tree vs Tree Size
-```{r}
-#Variable Total Carbon per tree (kg)
-mangrove_2017 |> 
-  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c)) +
-  geom_point(alpha = 0.7, color = "darkolivegreen") +
-  labs(title = "Tree kg C vs Size")
-```
+Total Carbon per tree for Hectare vs Sample Plot Type (Plot Type 25m2 vs 154m2)
 
 ```{r}
-mangrove_2017 |> 
-  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c, col = plot_size_m2)) +
-  geom_point(alpha = 0.7) +
-  labs(title = "Tree kg C vs Size") +
-  facet_wrap(~ plot_size_m2)
 
+mangrove_2017 |> 
+  filter(plot_size_m2 == 25.133 ) |> 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram() 
 ```
 
-Option 2 For variable Selection
 
-Total Carbon per tree for Hectare vs Sample Plot Type
+```{r}
+mangrove_2017 |> 
+  filter(plot_size_m2 == 153.938 ) |> 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram() 
+```
+
+
 ```{r}
 #Variable Total Carbon per tree (mg)
 mangrove_2017 |> 
@@ -215,33 +248,94 @@ mangrove_2017 |>
 ```
 
 
-Starting the Statistical analysis
+State your null and alternative hypotheses
 
+**Response: For the null hypothesis you state that there is no difference for the carbon stored in each tree per hectare, between the sample plot size 25m2 and the sample size of 154m2.**
+
+$$H_0: \mu_{154m2} - \mu_{25m2} = 0$$
+ Calculate the Point Estimate
 ```{r}
-#Histogram of Total Carbon per Tree/Ha
-ggplot(mangrove_2017, aes(x=total_tree_kg_c)) +
-  geom_histogram() +
-  facet_wrap(~plot_size_m2)
-```
-
-```{r}
-
-ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha)) +
-  geom_histogram() + 
-  facet_wrap(~plot_size_m2)#, ncol = 1)
-```
-
-
--   Create a table and calculate the mean and sd on total ca per hectar for each plot size
-
- Plot Type 25m2 vs 154m2
-```{r}
-#Calulate Point Estimate
+#Calculate Point Estimate
 names(mangrove_plots_2017)
-point_est_1 = (mangrove_plots_2017$mean_tree_c_ha_mg[3] - stat_plots_2017$mean_tree_c_ha_mg[1])
+point_est_1 = ( - mangrove_plots_2017$mean_tree_c_ha_mg[3] + mangrove_plots_2017$mean_tree_c_ha_mg[1])
 print(point_est_1)
 
 ```
+
+Calculate the Standard Error
+```{r}
+#Define the Standard Error
+n_25m = mangrove_plots_2017[[1,2]]
+n_154m = mangrove_plots_2017[[3,2]]
+
+s_25m =  mangrove_plots_2017[[1,9]]
+s_154m =  mangrove_plots_2017[[3,9]]
+
+SE_1 = as.numeric(sqrt(s_25m^2/n_25m + s_154m^2/n_154m))
+print(SE_1)
+
+
+```
+
+Calculate the Z-Score
+```{r}
+
+z_score_1 <- (point_est_1 - 0) / SE_1
+z_score_1
+```
+
+Calculate the P-Value
+```{r}
+option1_ttest <- t.test(mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2==25.133], mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 153.938])
+
+```
+**With this results we can reject the null as the p-value is very small, meaning there is a significant difference between the means on Carbon storage in each tree per hectare between the sample plot size of 25m2 to the sample size of 154m2**
+
+Check differences between manual and t.test automatic
+
+```{r}
+print(option1_ttest$p.value)
+
+pval_1 = 2 * pnorm(point_est_1, mean = 0, sd = SE_1, lower.tail = F)
+print(pval_1)
+
+```
+
+
+
+```{r}
+
+crit_val_1 = qnorm(0.025, lower.tail = F)
+ci_lower_1 = round(point_est_1 - crit_val_1*SE_1, 2)
+ci_upper_1 = round(point_est_1 + crit_val_1*SE_1, 2)
+
+
+print(paste0("There is 95% probability that between [", ci_lower_1,",",ci_upper_1, "] it contains the difference in total tree carbon (mg) per hecatre across sample plot 25m2 and 154m2"))
+```
+
+
+Option 2 For variable Selection
+Total Carbon per tree vs Tree Size
+```{r}
+#Variable Total Carbon per tree (kg)
+mangrove_2017 |> 
+  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c)) +
+  geom_line(alpha = 0.3, color = "deepskyblue4") +
+  geom_point(alpha = 0.8, color = "darkolivegreen") +
+  labs(title = "Tree kg C vs Size")
+```
+
+```{r}
+mangrove_2017 |> 
+  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c, col = plot_size_m2)) +
+  geom_point(alpha = 0.7) +
+  geom_line(alpha = 0.2) +
+  labs(title = "Tree kg C vs Size") +
+  facet_wrap(~ plot_size_m2)
+
+```
+
+Starting the Statistical analysis
 
 ```{r}
 #Calculate the lm of total carbon per tree in relation to their size
@@ -249,10 +343,12 @@ names(mangrove_2017)
 
 lm_carbon <- lm(total_tree_kg_c ~ cd_chatting_m, data=mangrove_2017) |> 
   summary()
-
+  
+lm_carbon
 
 ```
 
+Calculate Point Estimate, Standard Error, Point Estimate, Confident Intervals
 ```{r}
 
 crit_val_95 <- qnorm(0.025, lower.tail = FALSE)
@@ -266,3 +362,6 @@ ci_lower
 ci_upper
 
 ```
+
+
+**Confident Intervals: We are 95% confident that our point estimate lays within the confidence interval 2.5- 2.6 of  tree size.**
