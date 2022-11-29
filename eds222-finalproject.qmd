@@ -37,10 +37,6 @@ mangrove_df <- read_csv(here::here("data","clean_monitoring_data_javier.csv")) |
 
 mangrove_df_b <- read_csv(here::here("data","monitoring_siteB_data_javier.csv")) |> clean_names()
 
-mangrove_df_b <- read_csv(here::here("data","monitoring_siteB_data_javier.csv")) |> clean_names()
-
-
-
 ```
 
 Understand the data with R methods
@@ -62,14 +58,13 @@ class(mangrove_df$plantation_year)
 #Cleaning and adding some changes to the data
 ```{r}
 #Changing some data
-mangrove_df$height_cm[1253] <- 112
 mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
 mangrove_df$plot <- as.character(mangrove_df$plot)
 mangrove_df$plot_size_m2 <- as.factor(mangrove_df$plot_size_m2)
 
 ```
 
-Create a table that is grouped by the each plantation year and contains the total number of sample plots and the total number of samples trees per plantation.
+Create a table that is grouped by the each plantation year containing the total number of sample plots and the total number of samples trees per plantation.
 
 ```{r}
 
@@ -90,7 +85,7 @@ Create a table that shows the samples per each plot
 plots <- mangrove_df |> 
   group_by(plantation_year,plot) |> 
   summarise(plot = unique(plot),
-            sample_count = n())  
+            sample_count = n())
 
 knitr::kable(plots)
 
@@ -105,8 +100,8 @@ mangrove_plots_summary <- mangrove_df |>
   summarise(plot_size_m2 = unique(plot_size_m2),
             plot_count = length(unique(plot)),
             tot_samples = n(),
-            mean_plant_size_m = mean(cd_chatting_m),
-            mean_tot_carbon_kg_c = mean(total_tree_kg_c))
+            mean_plant_size_cm = (mean(cd_chatting_m)*100),
+            mean_tot_carbon_g_c = mean(total_tree_kg_c)*1000)
 
 kable(mangrove_plots_summary)
 
@@ -114,7 +109,8 @@ kable(mangrove_plots_summary)
 
 Create plots that are relevant to your questions
 
-Carbon Sequastration (kg/tree) vs Size
+Carbon Sequestration (kg/tree) vs Size
+
 (_ cd_chatting_m, y = total_tree_kg_c _)
 ```{r}
 #Plotting variables of interest
@@ -151,8 +147,8 @@ Create a table that contains the means of carbon and carbon per hectare for each
 plots_2017 <- mangrove_2017 |> 
   group_by(plot, plot_size_m2) |> 
   summarise(sample_count = n(),
-            mean_carbon = mean(total_tree_kg_c),
-            mean_carbon_ha = mean(total_tree_mg_c_ha))
+            mean_carbon_kg = mean(total_tree_kg_c),
+            mean_carbon_mg_ha = mean(total_tree_mg_c_ha))
 
 kable(plots_2017)
 
@@ -200,12 +196,21 @@ ggplot(mangrove_2017, aes(x = plot_size_m2, y= height_cm, size= total_tree_kg_c 
 ```
 
 Violin Chart
+Tree size effects on carbon sequestration
 
+```{r}
+ggplot(mangrove_2017, aes(x = plot_size_m2, y= cd_chatting_m, size= total_tree_kg_c , fill = plot_size_m2)) +
+  geom_violin(alpha = 0.5) +
+  labs(title= "Tree heights relationship with carbon sequestration per Plot Type")
+```
+
+
+Violin Chart
 Sample size effects on carbon sequestration per plot size
 
 ```{r}
 
-ggplot(plots_2017, aes(x = plot_size_m2, y= sample_count, size= mean_carbon , fill = plot_size_m2)) +
+ggplot(plots_2017, aes(x = plot_size_m2, y= sample_count, size= mean_carbon_kg , fill = plot_size_m2)) +
   geom_violin(alpha = 0.5) +
   labs(title= "Sample counts effect on carbon sequestration per Plot Type")
 
@@ -219,7 +224,7 @@ positions <- c("25m2", "77m2", "154m2")
 ggplot(mangrove_plots_2017, aes(x=plot_size_m2 , y=mean_chatting_size_m, fill = plot_size_m2)) +
   geom_col() +
   labs(title = "Tree Size means") + 
-  scale_fill_brewer(palette = "Spectral") + scale_x_discrete(limits = positions)
+  scale_fill_brewer(palette = "Set2") + scale_x_discrete(limits = positions)
   
 
 ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c_kg, fill = plot_size_m2)) +
@@ -237,18 +242,15 @@ ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c_ha_mg, fill = plot
 ```
 
 
+Compare the 3 histograms of plot size m2
 ```{r}
-ggplot(mangrove_plots_2017, aes(x=plot_size_m2, fill = plot_size_m2)) +
-  geom_col(aes(y=mean_chatting_size_m)) + 
-  geom_col(aes(y=mean_tree_c_ha_mg)) +
-  labs(title = "Tree Size means") + 
-  scale_fill_brewer(palette = "Spectral") +
-  scale_y_continuous(
-    name = "Size",
-    sec.axis = sec_axis(~ . * 10, name = "CPH"))
 
+ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha, color = plot_size_m2)) +
+  geom_freqpoly(aes(y = stat(density))) + 
+  scale_color_brewer(palette = "Set1")
 
 ```
+
 
 
 Option 1 For variable Selection. 
@@ -259,17 +261,28 @@ Histogram 1 : Plot Size 25m2
 
 mangrove_2017 |> 
   filter(plot_size_m2 == 25.133 ) |> 
-ggplot() +
-  geom_histogram(aes(x=total_tree_mg_c_ha)) 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram(aes(y = stat(density)), 
+fill = "lightgreen",
+color = "gray30", 
+alpha = 0.2) +
+  geom_density()
+
 ```
 
 Histogram 2 : Plot Size 154m2
 ```{r}
+
 mangrove_2017 |> 
   filter(plot_size_m2 == 153.938 ) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
-  geom_histogram() 
+  geom_histogram(aes(y = stat(density)), 
+fill = "lightblue",
+color = "gray30", 
+alpha = 0.2) +
+  geom_density()
 ```
+
 
 
 ```{r}
@@ -294,11 +307,11 @@ For the null hypothesis you state that there is no difference in the means of th
 Alternative hypothesis you state that there is a difference in the means of the total carbon per tree (mg) between the sample size of 25m2 and 154m2.
 
 
-$$H_0: \mu_{154m2} - \mu_{25m2} = 0$$
+$$H_0: \mu_{25m2} - \mu_{154m2} = 0$$
 Calculate the Point Estimate
 ```{r}
 #Calculate Point Estimate
-names(mangrove_plots_2017)
+
 point_est_1 = (mangrove_plots_2017$mean_tree_c_ha_mg[1] - mangrove_plots_2017$mean_tree_c_ha_mg[3])
 
 print(point_est_1)
@@ -323,6 +336,7 @@ Calculate the Z-Score
 ```{r}
 z_score_1 <- (point_est_1 - 0) / SE_1
 z_score_1
+
 ```
 
 Calculate the P-Value
@@ -342,7 +356,8 @@ Check differences between manual and t.test automatic
 print(option1_ttest$p.value)
 
 #P-Value with pnorm
-pval_1 = 2 * pnorm(point_est_1, mean = 0, sd = SE_1, lower.tail = FALSE)
+pval_1 = pnorm(point_est_1, mean = 0, sd = SE_1, lower.tail = FALSE)
+
 print(pval_1)
 ```
 **With this results we can reject the null as the p-value is very small, meaning there is a significant difference between the means on Carbon storage in each tree per hectare between the sample plot size of 25m2 to the sample size of 154m2**
@@ -358,7 +373,7 @@ print(paste0("There is 95% probability that between [", ci_lower_1,",",ci_upper_
 ```
 
 
-We are 95% confident that the true value lies between 0.31 - 0.37 Tree Carbon sequestration in mg per hectare.
+We are 95% confident that the true value lies between 0.30 - 0.36 Tree Carbon sequestration in mg per hectare.
 
 
 ```{r}
@@ -420,6 +435,9 @@ ci_upper
 
 ```
 
+**INCOMPLETE: WHY ARE THE CONFIDENCE INTERVALS SO DIFFERENT to the t.test?**
+
+**The order of the t.test matters as they are the same number but just positive, or negative.**
 
 ```{r}
 
@@ -427,7 +445,7 @@ t.test(mangrove_2017$cd_chatting_m, mangrove_2017$total_tree_kg_c)
 
 ```
 
-**Confident Intervals: We are 95% confident that our point estimate lays within the confidence interval 2.5 - 2.6 of  tree size.**
+**Confident Intervals: We are 95% confident that our point estimate lays within the confidence interval of 0.059 - 0.097 of tree size.**
 
 
 ```{r}
@@ -451,7 +469,7 @@ mangrove_2017_option2 <- mangrove_2017 |>
   mutate(total_tree_kg_c = log10(total_tree_kg_c),
          cd_chatting_m = log10(cd_chatting_m))
 
-#Plot the linear regresion
+#Plot the linear regression
 mangrove_2017_option2 |> 
   ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c)) +
   geom_line(alpha = 0.3, color = "deepskyblue4") +
@@ -514,10 +532,7 @@ ci_upper_2
 Option 3 - Power Calculation
 Define the Sample Number with Total Carbon per tree
 
-```{r}
-#Using our table mangrove_plots_2017 with the means, sd per sample type we can calculate our variables to define the power needed.
-
-```
+Using our table mangrove_plots_2017 with the means, sd per sample type we can calculate our variables to define the power needed.
 
 Plot the histogram distribution
 ```{r}
@@ -525,11 +540,15 @@ Plot the histogram distribution
 mangrove_2017 |> 
   filter(plot_size_m2 %in% c(25.133, 76.969, 153.938)) |> 
 ggplot(aes(x=total_tree_mg_c_ha, fill = plot_size_m2)) +
-  geom_histogram() +
+  geom_histogram(alpha = 0.8) +
   labs(title = "Total Carbon per Tree (mg/ha)")
+
+ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha, color = plot_size_m2)) +
+  geom_freqpoly(aes(y = stat(density)))
   
 ```
 
+**The problem that we see in this histograms is that the means overlaps between the plot size 154m2 and the plot size 77m2. In this case we will need more samples in order to get the 95% confidence we are looking for.
 
 ```{r}
 #Total Tree Carbon (mg/ha)
@@ -537,7 +556,7 @@ ggplot(aes(x=total_tree_mg_c_ha, fill = plot_size_m2)) +
 mangrove_2017 |> 
   filter(plot_size_m2 == 25.133) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
-  geom_histogram(aes(y = stat(density)), fill = "red", color = "gray30") +
+  geom_histogram(aes(y = stat(density)), fill = "lightgreen", color = "gray30") +
   geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
   labs(title = "Total Carbon per Tree (mg/ha)")
 ```
@@ -546,30 +565,28 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
 ```{r}
 #Total Tree Carbon (mg/ha)
 # Just the 77m2
-
 mangrove_2017 |> 
   filter(plot_size_m2 == 76.969) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
-  geom_histogram(aes(y = stat(density)), fill = "green", color = "gray30") +
+  geom_histogram(aes(y = stat(density)), fill = "lightblue", color = "gray30") +
   geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
   labs(title = "Total Carbon per Tree (mg/ha)")
 ```
 
 
 ```{r}
-
 #Total Tree Carbon (mg/ha)
 # Just the 154m2
 mangrove_2017 |> 
   filter(plot_size_m2 == 153.938) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
-  geom_histogram(aes(y = stat(density)), fill = "lightblue", color = "gray30") +
+  geom_histogram(aes(y = stat(density)), fill = "pink", color = "gray30") +
   geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
   labs(title = "Total Carbon per Tree (mg/ha)")
 
 ```
 
-Plot the histogram removing the points far away
+In this box plot we can see how is the variance "means" merging from one plot size to the other.
 ```{r}
 mangrove_2017 |>
   ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha,color = plot_size_m2)) +
@@ -578,7 +595,7 @@ mangrove_2017 |>
   scale_color_brewer(palette = "Dark2") 
 ```
 
-Create a random table of 10 samples per plot size
+Create a random table of 10 samples per plot size.
 ```{r}
 #Create the random table
 
@@ -586,8 +603,25 @@ random_table <- mangrove_2017 |>
   group_by(plot_size_m2) |> 
   slice_sample(n = 10)
 
-ggplot(random_table, aes(x = total_tree_mg_c_ha, fill = plot_size_m2)) + 
-  geom_histogram()
+rand_means <- random_table |> 
+  group_by(plot_size_m2) |> 
+  summarise(mean = mean(total_tree_mg_c_ha))
+
+```
+
+Create a histogram too visualize the new 10 random numbers and see the overlap between the two sample sizes. This will help us understand the power calculation. Remember that if the overlap is high then you need a higher number of samples to increase your probability. 
+
+```{r}
+ggplot(random_table, aes(x = total_tree_mg_c_ha)) + 
+  geom_histogram(aes(y = stat(density), 
+                 fill = plot_size_m2),
+                 alpha = 0.8) +
+  geom_density(aes(fill = plot_size_m2, 
+               col = plot_size_m2),
+               alpha = 0.2) +
+  geom_vline(xintercept = rand_means[[1,2]], color = "red") +
+    geom_vline(xintercept = rand_means[[2,2]], color = "green") +
+    geom_vline(xintercept = rand_means[[3,2]], color = "blue")
 
 ```
 
@@ -620,13 +654,17 @@ power = 0.90
 random_d = as.numeric(sqrt(random_sd_25m^2/10 + random_sd_154m^2/10))
 print(random_d)
 
-pwr.t.test(n =10, d = random_d, sig.level=.05, alternative = "greater")
+pwr.t.test(n =10, 
+           d = random_d, 
+           sig.level=.05, 
+           type="one.sample",
+           alternative = "greater")
 
 ```
 
 
-```{r}
 
+```{r}
 # Calculate the power with all data
 sd_25m = mangrove_plots_2017[[1,9]]
 sd_154m =  mangrove_plots_2017[[3,9]]
@@ -638,6 +676,13 @@ print(d)
 
 #Use pwr.t2n.test when the sample size are not the same
 pwr.t2n.test(n1 = 321, n2= 3467, d=d )
+
+```
+
+
+```{r}
+
+power.prop.test()
 
 ```
 
