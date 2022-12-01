@@ -87,8 +87,6 @@ plots <- mangrove_df |>
   summarise(plot = unique(plot),
             sample_count = n())
 
-knitr::kable(plots)
-
 
 ```
 
@@ -137,9 +135,6 @@ mangrove_2017 <- mangrove_df |>
   filter(total_tree_mg_c_ha < 1.9) |> 
   select(height_cm,plot, plot_size_m2, cd_chatting_m,total_tree_kg_c,total_tree_mg_c_ha)
 
-kable(mangrove_2017)
-
-
 ```
 
 Create a table that contains the means of carbon and carbon per hectare for each type plot and each plot
@@ -147,12 +142,34 @@ Create a table that contains the means of carbon and carbon per hectare for each
 plots_2017 <- mangrove_2017 |> 
   group_by(plot, plot_size_m2) |> 
   summarise(sample_count = n(),
-            mean_carbon_kg = mean(total_tree_kg_c),
-            mean_carbon_mg_ha = mean(total_tree_mg_c_ha))
-
-kable(plots_2017)
+            mean_tree_c = mean(total_tree_kg_c),
+            mean_carbon_mg_ha = mean(total_tree_mg_c_ha),
+            sd_tree_c = sd(total_tree_kg_c),
+            sd_tree_c_ha = sd(total_tree_mg_c_ha))
 
 ```
+
+```{r}
+
+
+library(ggpmisc)
+my.formula <- y ~ x
+
+ggplot(plots_2017, aes(x= sample_count, y = sd_tree_c_ha)) +
+  geom_point(aes(color = plot_size_m2)) +
+  geom_smooth(method = lm,
+              formula = my.formula,
+              color = "cyan4",
+              se = F) +
+  labs(title = "Tree Carbon variance per Sample plot",
+       x = "Samples per Plot",
+       y = "Variance of Tree carbon (mg/ha)")
+
+
+
+```
+
+
 
 ```{r}
 plots_percent_2017 <- mangrove_2017 |> 
@@ -164,6 +181,7 @@ plots_percent_2017 <- mangrove_2017 |>
 
 kable(plots_percent_2017,
       caption = "TABLE 5: 2017 Sample Plots Percentages")
+
 ```
 
 -   Create a table and calculate the mean and sd on total carbon per hectare for each plot size
@@ -174,15 +192,16 @@ mangrove_plots_2017 <- mangrove_2017 |>
   group_by(plot_size_m2) |> 
   summarise(tot_samples = n(),
             tot_plot_count = length(unique(plot)),
-            mean_chatting_size_m = mean(cd_chatting_m),
-            mean_tree_c_kg = mean(total_tree_kg_c),
-            mean_tree_c_ha_mg = mean(total_tree_mg_c_ha),
-            sd_chatting_size_m = sd(cd_chatting_m),
-            sd_tree_c_kg = mean(total_tree_kg_c),
-            sd_tree_c_ha_mg = sd(total_tree_mg_c_ha)) |> 
+            mean_size_m = mean(cd_chatting_m),
+            mean_tree_c = mean(total_tree_kg_c),
+            mean_tree_c_ha = mean(total_tree_mg_c_ha),
+            sd__size_m = sd(cd_chatting_m),
+            sd_tree_c = mean(total_tree_kg_c),
+            sd_tree_c_ha = sd(total_tree_mg_c_ha)) |> 
   mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
 
 kable(mangrove_plots_2017)
+
 ```
 
 Violin Chart
@@ -295,6 +314,7 @@ mangrove_2017 |>
   scale_color_brewer(palette = "Dark2")
 ```
 
+Option 1:
 State your null and alternative hypotheses
 
 The Null Hypothesis - The Total Carbon per Tree (mg) mean in the Sample Size of 25m2 is no different to the 154m2.
@@ -528,11 +548,18 @@ ci_upper_2
 
 ```
 
-
 Option 3 - Power Calculation
 Define the Sample Number with Total Carbon per tree
 
 Using our table mangrove_plots_2017 with the means, sd per sample type we can calculate our variables to define the power needed.
+
+State your null and alternative hypotheses
+
+The Null Hypothesis - The Total Carbon per Tree (mg) mean in the Sample Size of 25m2 is no different to the 154m2.
+
+Alternative - The Total Carbon per Tree (mg) in the sample size of 25m2 is different than the one to the 154m2.
+
+Question: When we have different categorical variables can you state a hypothesis will all of the variables or you need to specify the difference between two?
 
 Plot the histogram distribution
 ```{r}
@@ -593,6 +620,8 @@ mangrove_2017 |>
   geom_boxplot() +
   labs(title = "Tree mg C vs Plot Type") +
   scale_color_brewer(palette = "Dark2") 
+
+
 ```
 
 Create a random table of 10 samples per plot size.
@@ -621,12 +650,15 @@ ggplot(random_table, aes(x = total_tree_mg_c_ha)) +
                alpha = 0.2) +
   geom_vline(xintercept = rand_means[[1,2]], color = "red") +
     geom_vline(xintercept = rand_means[[2,2]], color = "green") +
-    geom_vline(xintercept = rand_means[[3,2]], color = "blue")
+    geom_vline(xintercept = rand_means[[3,2]], color = "blue") +
+  ylim(0, 30) +
+  xlim(0,1.5)
+
 
 ```
 
 
-Calculate power
+Calculate power table with the means and sd of your random table
 ```{r}
 #Create a table with means and SD per plot size
 power_table <- random_table |> 
@@ -643,6 +675,7 @@ power_table <- random_table |>
 ```
 
 
+Use the pwr() package to define power with the random samples.
 ```{r}
 # Calculate power with the random samples of 10
 
@@ -663,7 +696,7 @@ pwr.t.test(n =10,
 ```
 
 
-
+Use the pwr package data to define the power with the whole table
 ```{r}
 # Calculate the power with all data
 sd_25m = mangrove_plots_2017[[1,9]]
@@ -682,7 +715,7 @@ pwr.t2n.test(n1 = 321, n2= 3467, d=d )
 
 ```{r}
 
-power.prop.test()
+#power.prop.test()
 
 ```
 
