@@ -246,7 +246,7 @@ Sample size effects on carbon sequestration per plot size
 
 ```{r}
 
-ggplot(plots_2017, aes(x = plot_size_m2, y= sample_count, size= mean_carbon_kg , fill = plot_size_m2)) +
+ggplot(plots_2017, aes(x = plot_size_m2, y= sample_count, size= mean_carbon_mg_ha , fill = plot_size_m2)) +
   geom_violin(alpha = 0.5) +
   labs(title= "Sample counts effect on carbon sequestration per Plot Type")
 
@@ -257,19 +257,19 @@ Bar Charts
 ```{r}
 positions <- c("25m2", "77m2", "154m2")
 
-ggplot(mangrove_plots_2017, aes(x=plot_size_m2 , y=mean_chatting_size_m, fill = plot_size_m2)) +
+ggplot(mangrove_plots_2017, aes(x=plot_size_m2 , y=mean_size_m, fill = plot_size_m2)) +
   geom_col() +
   labs(title = "Tree Size means") + 
   scale_fill_brewer(palette = "Set2") + scale_x_discrete(limits = positions)
   
 
-ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c_kg, fill = plot_size_m2)) +
+ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c, fill = plot_size_m2)) +
   geom_col() +
   labs(title = "Carbon mean per tree")+ 
   scale_fill_brewer(palette = "Spectral") + scale_x_discrete(limits = positions)
 
 
-ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c_ha_mg, fill = plot_size_m2)) +
+ggplot(mangrove_plots_2017, aes(x=plot_size_m2, y=mean_tree_c_ha, fill = plot_size_m2)) +
   geom_col() +
   labs(title = "Carbon mean per tree per ha") + 
   scale_fill_brewer(palette = "Spectral") +
@@ -326,7 +326,7 @@ alpha = 0.2) +
 #Variable Total Carbon per tree (mg)
 mangrove_2017 |> 
   ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha ,color = plot_size_m2)) +
-  geom_point(aes(y= mean(total_tree_mg_c_ha)), size = 3, alpha = 0.9, color = "darkblue", shape = 3 ) +
+  geom_point(aes(y= mean(total_tree_mg_c_ha)), size = 10, alpha = 0.9, color = "darkblue", shape = 3 ) +
   geom_point(alpha = 0.7) +
   labs(title = "Tree mg C vs Plot Type") +
   scale_color_brewer(palette = "Dark2")

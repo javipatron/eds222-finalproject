@@ -141,6 +141,7 @@ Create a table that contains the means of carbon and carbon per hectare for each
 plots_2017 <- mangrove_2017 |> 
   group_by(plot, plot_size_m2) |> 
   summarise(sample_count = n(),
+            mean_hight = mean(height_cm),
             mean_tree_c = mean(total_tree_kg_c),
             mean_carbon_mg_ha = mean(total_tree_mg_c_ha),
             sd_tree_c = sd(total_tree_kg_c),
@@ -170,11 +171,10 @@ mangrove_plots_2017 <- mangrove_2017 |>
   group_by(plot_size_m2) |> 
   summarise(tot_samples = n(),
             tot_plot_count = length(unique(plot)),
+            mean_height = mean(height_cm),
             mean_size_m = mean(cd_chatting_m),
-            mean_tree_c = mean(total_tree_kg_c),
             mean_tree_c_ha = mean(total_tree_mg_c_ha),
             sd__size_m = sd(cd_chatting_m),
-            sd_tree_c = mean(total_tree_kg_c),
             sd_tree_c_ha = sd(total_tree_mg_c_ha)) |> 
   mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
 
@@ -195,6 +195,15 @@ Analyzing the different options
 
 
 *Question 1:* What technique of mangrove sampling will bring a lower variance in Total Tree Carbon calculation (mg/ha).
+
+
+```{r}
+mangrove_2017 |> 
+  ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha ,color = plot_size_m2)) + geom_point(alpha = 0.3, size = 3) +
+  labs(title = "Tree mg C vs Plot Type") +
+  scale_color_brewer(palette = "Dark2")
+
+```
 
 
 State your null and alternative hypotheses
@@ -289,6 +298,7 @@ mangrove_2017 |>
   labs(title = "Tree mg C vs Plot Type")+
   scale_color_brewer(palette = "Dark2") +
   geom_hline(yintercept = 0.31, linetype = "dashed", color = "deepskyblue4", size = .5)+
+  
   geom_hline(yintercept = 0.37, linetype = "dashed", color = "orange", size = .5)
 
 ```
@@ -381,20 +391,120 @@ mangrove_2017 |>
 
 ```
 
-Option 1:
-#Question: Don´t you have a higher confidence interval when your samples are showing less variance ? For the option 1 case of 25m2 vs 154m2 -> 77m2 vs 154m2.
+
+                     
+                      
+**25m2 vs 77m2**
+**The Null Hypothesis -** The Total Carbon per Tree (mg/ha) mean in the Sample Size of 25m2 is no different to the 77m2.
+
+**Alternative Hypothesis-** The Total Carbon per Tree (mg/ha) in the sample size of 25m2 is different than the one to the 77m2.
 
 
-Option 2:
-#Question, should I include the log graph and analysis of cwo continuous variables?
-#Question, when you plot the same graph but divided by plot size you got 3 different lines.
+$$H_0: \mu_{77m2} - \mu_{154m2} = 0$$
+
+Calculate the Point Estimate
+```{r}
+#Calculate Point Estimate
+
+point_est_3 = (mangrove_plots_2017$mean_tree_c_ha[1] - mangrove_plots_2017$mean_tree_c_ha[2])
+
+print(point_est_3)
+
+```
+
+Calculate the Standard Error
+```{r}
+
+
+SE_3 = as.numeric(sqrt(s_25m^2/n_25m + s_77m^2/n_77m))
+print(SE_3)
+
+```
+
+Calculate the Z-Score
+```{r}
+z_score_3 <- (point_est_3 - 0) / SE_3
+z_score_3
+
+```
+
+Calculate the P-Value
+```{r}
+
+option3_ttest <- t.test(mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 25.133], mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 76.969])
+
+option3_ttest
+
+```
+
+Check differences between manual and t.test automatic
+
+```{r}
+
+#P-value with T.Test
+print(option3_ttest$p.value)
+
+#P-Value with pnorm
+pval_3 = pnorm(point_est_3, mean = 0, sd = SE_3, lower.tail = FALSE)
+
+print(pval_3)
+```
+**With this results we can reject the null as the p-value is very small, meaning there is a significant difference between the means on Carbon storage in each tree per hectare between the sample plot size of 77m2 to the sample size of 154m2**
+
+```{r}
+
+crit_val_3 = qnorm(0.025, lower.tail = F)
+ci_lower_3 = round(point_est_3 - crit_val_3*SE_3, 2)
+ci_upper_3 = round(point_est_3 + crit_val_3*SE_3, 2)
+
+
+print(paste0("There is 95% probability that between [", ci_lower_3,",",ci_upper_3, "] it contains the difference in total tree carbon (mg) per hecatre across sample plot 25m2 and 77m2"))
+
+```
+
+We are 95% confident that the true value lies between 0.28 - 0.34 Tree Carbon sequestration in mg per hectare.
+
+```{r}
+mangrove_2017 |>
+  filter(plot_size_m2 %in% c(25.133, 76.969)) |> 
+  ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha,color = plot_size_m2)) +
+  geom_point(aes(y= mean(total_tree_mg_c_ha)), size = 3, alpha = 0.9, color = "darkblue", shape = 3 ) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree mg C vs Plot Type")+
+  scale_color_brewer(palette = "Dark2") +
+  geom_hline(yintercept = 0.28, linetype = "dashed", color = "deepskyblue4", size = .5)+
+  
+  geom_hline(yintercept = 0.34, linetype = "dashed", color = "orange", size = .5)
+
+```
 
 
 
-Option 3:
-Question: What does a sd of 0.3 mean ? For the case of option 3, the variance plot its showing the 25m2 plot size with higher variance.
-#Question: Should I do the analysis for lm() of the analysis of the residuals ?
 
+
+
+
+
+Option 3
+
+
+Plot the three distributions
+```{r}
+#Total Tree Carbon (mg/ha)
+mangrove_2017 |> 
+  filter(plot_size_m2 %in% c(25.133, 76.969, 153.938)) |> 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram(aes(y = stat(density), fill = plot_size_m2),color = "gray30", alpha = 0.3) +
+  geom_density(aes(fill = plot_size_m2), col = "gray30", alpha = 0.8) +
+  labs(title = "Total Carbon per Tree (mg/ha)")
+  
+```
+
+```{r}
+#Plotting just the lines
+ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha, color = plot_size_m2)) +
+  geom_freqpoly(aes(y = stat(density)))
+```
 
 
 # Option 3 comparing the variation of samples per plot
@@ -405,9 +515,10 @@ Question: What does a sd of 0.3 mean ? For the case of option 3, the variance pl
 mangrove_2017 |> 
   filter(plot_size_m2 == 25.133) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
-  geom_histogram(aes(y = stat(density)), fill = "lightgreen", color = "gray30") +
-  geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
-  labs(title = "Total Carbon per Tree (mg/ha)")
+  geom_histogram(aes(y = stat(density)), fill = "red", color = "gray30", alpha = 0.6) +
+  geom_density(col = "gray30", alpha = 0.3, fill = "gray10") +
+  labs(title = "Total Carbon per Tree (mg/ha)",
+       subtitle = "25m2")
 ```
 
 ```{r}
@@ -416,9 +527,10 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
 mangrove_2017 |> 
   filter(plot_size_m2 == 76.969) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
-  geom_histogram(aes(y = stat(density)), fill = "lightblue", color = "gray30") +
+  geom_histogram(aes(y = stat(density)), fill = "lightgreen", color = "gray30") +
   geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
-  labs(title = "Total Carbon per Tree (mg/ha)")
+  labs(title = "Total Carbon per Tree (mg/ha)",
+       subtitle = "77m2")
 ```
 
 ```{r}
@@ -427,9 +539,10 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
 mangrove_2017 |> 
   filter(plot_size_m2 == 153.938) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
-  geom_histogram(aes(y = stat(density)), fill = "pink", color = "gray30") +
+  geom_histogram(aes(y = stat(density)), fill = "lightblue", color = "gray30") +
   geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
-  labs(title = "Total Carbon per Tree (mg/ha)")
+  labs(title = "Total Carbon per Tree (mg/ha)",
+       subtitle = "154m2")
 
 ```
 
@@ -445,4 +558,31 @@ ggplot(plots_2017, aes(x= sample_count, y = sd_tree_c_ha)) +
        x = "Samples per Plot",
        y = "Variance of Tree carbon (mg/ha)")
 ```
+
+
+```{r}
+
+ggplot(plots_2017, aes(y= sample_count, x = sd_tree_c_ha)) +
+  geom_point(aes(color = plot_size_m2))
+
+
+```
+
+
+
+Questions in general
+
+Option 1:
+#Question: Don´t you have a higher confidence interval when your samples are showing less variance ? For the option 1 case of 25m2 vs 154m2 -> 77m2 vs 154m2.
+
+
+Option 2:
+#Question, should I include the log graph and analysis of cwo continuous variables?
+#Question, when you plot the same graph but divided by plot size you got 3 different lines.
+
+
+
+Option 3:
+Question: What does a sd of 0.3 mean ? For the case of option 3, the variance plot its showing the 25m2 plot size with higher variance.
+#Question: Should I do the analysis for lm() of the analysis of the residuals ?
 
