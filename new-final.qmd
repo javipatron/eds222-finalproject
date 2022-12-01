@@ -22,8 +22,7 @@ data <- file.path(rootdir,"data")
 
 
 
-Reading the .csv files
-
+Reading the .csv file
 ```{r}
 #Load data Mangrove Data
 mangrove_df <- read_csv(here::here("data","clean_monitoring_data_javier.csv")) |> clean_names()
@@ -58,14 +57,16 @@ mangrove_df$plot_size_m2 <- as.factor(mangrove_df$plot_size_m2)
 ```
 
 
-Create a table that is grouped by the each plantation year containing the total number of sample plots and the total number of samples trees per plantation.
+Create a table that is grouped by each plantation year, showing the total number of sample plots and the total number of trees per plantation effort.
 
 ```{r}
 
 mangrove_summary <- mangrove_df |> 
   group_by(plantation_year) |> 
   summarise(plot_count = length(unique(plot)),
-          tot_samples = n())
+          tot_samples = n(),
+          "sum_tot_c_mg/ha" = sum(total_tree_mg_c_ha))
+
           
 
 knitr::kable(mangrove_summary)
@@ -103,26 +104,28 @@ kable(mangrove_plots_summary)
 ```
 
 
-
+Create a plot to demonstrate the variance on total carbon that each tree has in mg/ha vs. sample size
 ```{r}
 ggplot(plots, aes(x= sample_count, y = sd_tree_c_ha)) +
-  geom_point(aes(color = plot_size_m2)) +
+  geom_point(aes(color = plantation_year)) +
   geom_smooth(method = lm,
               color = "cyan4",
               se = F) +
   labs(title = "Tree Carbon variance per Sample plot",
        x = "Samples per Plot",
-       y = "Variance of Tree carbon (mg/ha)") +
-  facet_wrap(~plantation_year)
+       y = "Variance of Tree carbon (mg/ha)")
 
 ```
 
 Lets focus on the 2017 plantation year
 
 Why?
-- We have more data
+- We have enough relevant data.
+- It has the highest variance from the three replantation years.
 - There are 3 different sampling collection efforts.
 
+
+Create a table that only contains information from the 2017 plantation year and the relevant columns.
 ```{r}
 # Potential need to rename the plots as "Sample Plot#1", "Sample plot #2", etc
 # Potential need to rename the plot size as "25m2", "77m2", "154m2"
@@ -145,7 +148,7 @@ plots_2017 <- mangrove_2017 |>
 
 ```
 
-
+- Create a table that shows percentages of the 2017 replantation effort.
 ```{r}
 plots_percent_2017 <- mangrove_2017 |> 
   group_by(plot_size_m2) |> 
@@ -191,14 +194,15 @@ Analyzing the different options
 **Option 3:** Calculate the Power with the information that we have.
 
 
+*Question 1:* What technique of mangrove sampling will bring a lower variance in Total Tree Carbon calculation (mg/ha).
 
-Option 1:
+
 State your null and alternative hypotheses
 
-                                    **25m2 vs 154m2**
-**The Null Hypothesis-** The Total Carbon per Tree (mg) mean in the Sample Size of 25m2 is no different to the 154m2.
+**25m2 vs 154m2**
+**The Null Hypothesis-** The Total Carbon per Tree (mg/ha) mean in the Sample Size of 25m2 is no different to the 154m2.
 
-**Alternative Hypothesis-** The Total Carbon per Tree (mg) in the sample size of 25m2 is different than the one to the 154m2.
+**Alternative Hypothesis-** The Total Carbon per Tree (mg/ha) in the sample size of 25m2 is different than the one to the 154m2.
 
 In other words:
 For the null hypothesis you state that there is no difference in the means of the total carbon per tree (mg) between the sample size of 25m2 and 154m2.
@@ -239,7 +243,7 @@ z_score_1
 
 ```
 
-Calculate the P-Value
+Calculate the T-Test and P-Value
 ```{r}
 
 option1_ttest <- t.test(mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 25.133], mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 153.938])
@@ -288,11 +292,12 @@ mangrove_2017 |>
   geom_hline(yintercept = 0.37, linetype = "dashed", color = "orange", size = .5)
 
 ```
-                              **77m2 vs 154m2**
+                      
+                      
+**77m2 vs 154m2**
+**The Null Hypothesis -** The Total Carbon per Tree (mg/ha) mean in the Sample Size of 77m2 is no different to the 154m2.
 
-**The Null Hypothesis -** The Total Carbon per Tree (mg) mean in the Sample Size of 77m2 is no different to the 154m2.
-
-**Alternative Hypothesis-** The Total Carbon per Tree (mg) in the sample size of 77m2 is different than the one to the 154m2.
+**Alternative Hypothesis-** The Total Carbon per Tree (mg/ha) in the sample size of 77m2 is different than the one to the 154m2.
 
 
 $$H_0: \mu_{77m2} - \mu_{154m2} = 0$$
@@ -376,8 +381,59 @@ mangrove_2017 |>
 
 ```
 
+Option 1:
+#Question: Don´t you have a higher confidence interval when your samples are showing less variance ? For the option 1 case of 25m2 vs 154m2 -> 77m2 vs 154m2.
+
+
+Option 2:
+#Question, should I include the log graph and analysis of cwo continuous variables?
+#Question, when you plot the same graph but divided by plot size you got 3 different lines.
+
+
+
+Option 3:
+Question: What does a sd of 0.3 mean ? For the case of option 3, the variance plot its showing the 25m2 plot size with higher variance.
+#Question: Should I do the analysis for lm() of the analysis of the residuals ?
+
+
 
 # Option 3 comparing the variation of samples per plot
+
+```{r}
+#Total Tree Carbon (mg/ha)
+# Just the 25m2
+mangrove_2017 |> 
+  filter(plot_size_m2 == 25.133) |> 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram(aes(y = stat(density)), fill = "lightgreen", color = "gray30") +
+  geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
+  labs(title = "Total Carbon per Tree (mg/ha)")
+```
+
+```{r}
+#Total Tree Carbon (mg/ha)
+# Just the 77m2
+mangrove_2017 |> 
+  filter(plot_size_m2 == 76.969) |> 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram(aes(y = stat(density)), fill = "lightblue", color = "gray30") +
+  geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
+  labs(title = "Total Carbon per Tree (mg/ha)")
+```
+
+```{r}
+#Total Tree Carbon (mg/ha)
+# Just the 154m2
+mangrove_2017 |> 
+  filter(plot_size_m2 == 153.938) |> 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram(aes(y = stat(density)), fill = "pink", color = "gray30") +
+  geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
+  labs(title = "Total Carbon per Tree (mg/ha)")
+
+```
+
+The final plot showing the relationship between sample size and variation of the calculated tree carbon (mg/ha)
 
 ```{r}
 ggplot(plots_2017, aes(x= sample_count, y = sd_tree_c_ha)) +
@@ -387,13 +443,6 @@ ggplot(plots_2017, aes(x= sample_count, y = sd_tree_c_ha)) +
               se = F) +
   labs(title = "Tree Carbon variance per Sample plot",
        x = "Samples per Plot",
-       y = "Variance of Tree carbon (mg/ha)") +
-  geom_hline(yintercept = 0.05, color = "gray10")
+       y = "Variance of Tree carbon (mg/ha)")
 ```
 
-```{r}
-
-ggplot(plots_2017, aes(x = sample_count, y =mean_carbon_mg_ha, color =plot_size_m2 )) +
-  geom_point()
-
-```

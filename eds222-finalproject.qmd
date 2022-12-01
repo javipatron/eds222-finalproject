@@ -62,6 +62,7 @@ mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
 mangrove_df$plot <- as.character(mangrove_df$plot)
 mangrove_df$plot_size_m2 <- as.factor(mangrove_df$plot_size_m2)
 
+
 ```
 
 Create a table that is grouped by the each plantation year containing the total number of sample plots and the total number of samples trees per plantation.
@@ -83,12 +84,28 @@ Create a table that shows the samples per each plot
 ```{r}
 
 plots <- mangrove_df |> 
-  group_by(plantation_year,plot) |> 
+  group_by(plantation_year,plot,plot_size_m2) |> 
   summarise(plot = unique(plot),
             sample_count = n())
 
+```
+
+```{r}
+
+ggplot(plots, aes(x= sample_count, y =plot_size_m2, color = plantation_year)) +
+  geom_point() 
+
+  
+```
+
+
+```{r}
+
+ggplot(plots_2017, aes(x = sample_count, y =mean_carbon_mg_ha, color =plot_size_m2 )) +
+  geom_point()
 
 ```
+
 
 Create a table of samples per plot but grouping by sample size
 
@@ -98,8 +115,10 @@ mangrove_plots_summary <- mangrove_df |>
   summarise(plot_size_m2 = unique(plot_size_m2),
             plot_count = length(unique(plot)),
             tot_samples = n(),
-            mean_plant_size_cm = (mean(cd_chatting_m)*100),
-            mean_tot_carbon_g_c = mean(total_tree_kg_c)*1000)
+            mean_plant_size_cm = (mean(cd_chatting_m)),
+            mean_tot_carbon_g_c = (mean(total_tree_kg_c)),
+            sd_plant_size = sd(cd_chatting_m),
+            sd_tot_carbon_kg_c = sd(total_tree_kg_c))
 
 kable(mangrove_plots_summary)
 
@@ -151,7 +170,6 @@ plots_2017 <- mangrove_2017 |>
 
 ```{r}
 
-
 library(ggpmisc)
 my.formula <- y ~ x
 
@@ -164,7 +182,6 @@ ggplot(plots_2017, aes(x= sample_count, y = sd_tree_c_ha)) +
   labs(title = "Tree Carbon variance per Sample plot",
        x = "Samples per Plot",
        y = "Variance of Tree carbon (mg/ha)")
-
 
 
 ```
@@ -287,6 +304,7 @@ color = "gray30",
 alpha = 0.2) +
   geom_density()
 
+
 ```
 
 Histogram 2 : Plot Size 154m2
@@ -312,6 +330,8 @@ mangrove_2017 |>
   geom_point(alpha = 0.7) +
   labs(title = "Tree mg C vs Plot Type") +
   scale_color_brewer(palette = "Dark2")
+
+
 ```
 
 Option 1:
@@ -390,11 +410,11 @@ ci_upper_1 = round(point_est_1 + crit_val_1*SE_1, 2)
 
 
 print(paste0("There is 95% probability that between [", ci_lower_1,",",ci_upper_1, "] it contains the difference in total tree carbon (mg) per hecatre across sample plot 25m2 and 154m2"))
+
 ```
 
 
 We are 95% confident that the true value lies between 0.30 - 0.36 Tree Carbon sequestration in mg per hectare.
-
 
 ```{r}
 mangrove_2017 |>
@@ -406,6 +426,7 @@ mangrove_2017 |>
   scale_color_brewer(palette = "Dark2") +
   geom_hline(yintercept = 0.31, linetype = "dashed", color = "deepskyblue4", size = .5)+
   geom_hline(yintercept = 0.37, linetype = "dashed", color = "orange", size = .5)
+
 ```
 
 
@@ -479,6 +500,7 @@ mangrove_2017 |>
        y = "Tree Carbon (kg)") +
     geom_hline(yintercept = 2.7, color = "orange")+
   geom_hline(yintercept = 2.5, color = "deepskyblue4")
+
 ```
 
 
@@ -641,6 +663,16 @@ rand_means <- random_table |>
 Create a histogram too visualize the new 10 random numbers and see the overlap between the two sample sizes. This will help us understand the power calculation. Remember that if the overlap is high then you need a higher number of samples to increase your probability. 
 
 ```{r}
+random_table <- mangrove_2017 |> 
+  group_by(plot_size_m2) |> 
+  slice_sample(n = 10)
+
+rand_means <- random_table |> 
+  group_by(plot_size_m2) |> 
+  summarise(mean = mean(total_tree_mg_c_ha))
+
+
+
 ggplot(random_table, aes(x = total_tree_mg_c_ha)) + 
   geom_histogram(aes(y = stat(density), 
                  fill = plot_size_m2),
