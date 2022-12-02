@@ -430,6 +430,193 @@ mangrove_2017 |>
 ```
 
 
+**77m2 vs 154m2** **The Null Hypothesis -** The Total Carbon per Tree (mg/ha) mean in the Sample Size of 77m2 is no different to the 154m2.
+
+**Alternative Hypothesis-** The Total Carbon per Tree (mg/ha) in the sample size of 77m2 is different than the one to the 154m2.
+
+$$H_0: \mu_{77m2} - \mu_{154m2} = 0$$
+
+Calculate the Point Estimate
+
+```{r}
+#Calculate Point Estimate
+
+point_est_2 = (mangrove_plots_2017$mean_tree_c_ha[2] - mangrove_plots_2017$mean_tree_c_ha[3])
+
+
+print(point_est_2)
+
+```
+
+Calculate the Standard Error
+
+```{r}
+#Define the Standard Error
+n_77m = mangrove_plots_2017[[2,2]]
+
+s_77m =  mangrove_plots_2017[[2,8]]
+
+SE_2 = as.numeric(sqrt(s_77m^2/n_77m + s_154m^2/n_154m))
+print(SE_2)
+
+```
+
+Calculate the Z-Score
+
+```{r}
+z_score_2 <- (point_est_2 - 0) / SE_2
+z_score_2
+
+```
+
+Calculate the P-Value
+
+```{r}
+
+option2_ttest <- t.test(mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 76.969], mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 153.938])
+
+option2_ttest
+
+```
+
+Check differences between manual and t.test automatic
+
+```{r}
+
+#P-value with T.Test
+print(option2_ttest$p.value)
+
+#P-Value with pnorm
+pval_2 = pnorm(point_est_2, mean = 0, sd = SE_2, lower.tail = FALSE)
+
+print(pval_2)
+```
+
+**With this results we can reject the null as the p-value is very small, meaning there is a significant difference between the means on Carbon storage in each tree per hectare between the sample plot size of 77m2 to the sample size of 154m2**
+
+```{r}
+
+crit_val_2 = qnorm(0.025, lower.tail = F)
+ci_lower_2 = round(point_est_2 - crit_val_2*SE_2, 2)
+ci_upper_2 = round(point_est_2 + crit_val_2*SE_2, 2)
+
+
+print(paste0("There is 95% probability that between [", ci_lower_2,",",ci_upper_2, "] it contains the difference in total tree carbon (mg) per hecatre across sample plot 77m2 and 154m2"))
+
+```
+
+We are 95% confident that the true value lies between 0.03 - 0.04 Tree Carbon sequestration in mg per hectare.
+
+```{r}
+mangrove_2017 |>
+  filter(plot_size_m2 %in% c(76.969, 153.938)) |> 
+  ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha,color = plot_size_m2)) +
+  geom_point(aes(y= mean(total_tree_mg_c_ha)), size = 3, alpha = 0.9, color = "darkblue", shape = 3 ) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree mg C vs Plot Type")+
+  scale_color_brewer(palette = "Dark2") +
+  geom_hline(yintercept = 0.03, linetype = "dashed", color = "deepskyblue4", size = .5)+
+  geom_hline(yintercept = 0.04, linetype = "dashed", color = "orange", size = .5)
+
+```
+
+**25m2 vs 77m2** **The Null Hypothesis -** The Total Carbon per Tree (mg/ha) mean in the Sample Size of 25m2 is no different to the 77m2.
+
+**Alternative Hypothesis-** The Total Carbon per Tree (mg/ha) in the sample size of 25m2 is different than the one to the 77m2.
+
+$$H_0: \mu_{77m2} - \mu_{154m2} = 0$$
+
+Calculate the Point Estimate
+
+```{r}
+#Calculate Point Estimate
+
+point_est_3 = (mangrove_plots_2017$mean_tree_c_ha[1] - mangrove_plots_2017$mean_tree_c_ha[2])
+
+print(point_est_3)
+
+```
+
+Calculate the Standard Error
+
+```{r}
+
+
+SE_3 = as.numeric(sqrt(s_25m^2/n_25m + s_77m^2/n_77m))
+print(SE_3)
+
+```
+
+Calculate the Z-Score
+
+```{r}
+z_score_3 <- (point_est_3 - 0) / SE_3
+z_score_3
+
+```
+
+Calculate the P-Value
+
+```{r}
+
+option3_ttest <- t.test(mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 25.133], mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size_m2 == 76.969])
+
+option3_ttest
+
+```
+
+Check differences between manual and t.test automatic
+
+```{r}
+
+#P-value with T.Test
+print(option3_ttest$p.value)
+
+#P-Value with pnorm
+pval_3 = pnorm(point_est_3, mean = 0, sd = SE_3, lower.tail = FALSE)
+
+print(pval_3)
+```
+
+**With this results we can reject the null as the p-value is very small, meaning there is a significant difference between the means on Carbon storage in each tree per hectare between the sample plot size of 77m2 to the sample size of 154m2**
+
+```{r}
+
+crit_val_3 = qnorm(0.025, lower.tail = F)
+ci_lower_3 = round(point_est_3 - crit_val_3*SE_3, 2)
+ci_upper_3 = round(point_est_3 + crit_val_3*SE_3, 2)
+
+
+print(paste0("There is 95% probability that between [", ci_lower_3,",",ci_upper_3, "] it contains the difference in total tree carbon (mg) per hecatre across sample plot 25m2 and 77m2"))
+
+```
+
+We are 95% confident that the true value lies between 0.28 - 0.34 Tree Carbon sequestration in mg per hectare.
+
+```{r}
+mangrove_2017 |>
+  filter(plot_size_m2 %in% c(25.133, 76.969)) |> 
+  ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha,color = plot_size_m2)) +
+  geom_point(aes(y= mean(total_tree_mg_c_ha)), size = 3, alpha = 0.9, color = "darkblue", shape = 3 ) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree mg C vs Plot Type")+
+  scale_color_brewer(palette = "Dark2") +
+  geom_hline(yintercept = 0.28, linetype = "dashed", color = "deepskyblue4", size = .5)+
+  
+  geom_hline(yintercept = 0.34, linetype = "dashed", color = "orange", size = .5)
+
+```
+
+
+
+
+
+
+
+
+
+
+
 Option 2 For variable Selection
 Total Carbon per tree vs Tree Size
 ```{r}
@@ -446,11 +633,10 @@ mangrove_2017 |>
 ```{r}
 
 mangrove_2017 |> 
-  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c, col = plot_size_m2)) +
+  ggplot(aes(x=cd_chatting_m, y = total_tree_mg_c_ha, color = plot_size_m2)) +
   geom_point(alpha = 0.7) +
   geom_line(alpha = 0.2) +
   labs(title = "Tree kg C vs Size") +
-  facet_wrap(~ plot_size_m2) +
   scale_color_brewer(palette = "Dark2")
 
 ```
