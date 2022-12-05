@@ -166,10 +166,7 @@ mangrove_plots_2017 <- mangrove_2017 |>
   group_by(plot_size_m2) |> 
   summarise(tot_samples = n(),
             tot_plot_count = length(unique(plot)),
-            mean_height = mean(height_cm),
-            mean_size_m = mean(cd_chatting_m),
             mean_tree_c_ha = mean(total_tree_mg_c_ha),
-            sd__size_m = sd(cd_chatting_m),
             sd_tree_c_ha = sd(total_tree_mg_c_ha)) |> 
   mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
 
@@ -323,8 +320,9 @@ Calculate the Standard Error
 
 ```{r}
 #Define the Standard Error
-n_77m = mangrove_plots_2017[[2,2]]
-s_77m =  mangrove_plots_2017[[2,8]]
+n_77m = mangrove_plots_2017$tot_samples[2]
+s_77m =  mangrove_plots_2017$sd_tree_c_ha[2]
+
 
 SE_2 = as.numeric(sqrt(s_77m^2/n_77m + s_154m^2/n_154m))
 print(SE_2)
@@ -511,8 +509,10 @@ ggplot(plots_2017, aes(x= sample_count, y = sd_tree_c_ha)) +
        y = "Variance of Tree carbon (mg/ha)")
 ```
 
+As you can see in the graph above the sample type with the lowest variance is the plot 154m2 with a mean of 0.03 in Standard Deviation, but it has a huge amount of samples. So, now the following question is: what is the recommended sample size to have a power of 90%.
 
-Show the histogram for all total carbon variance of 2017
+
+Show the histogram for all variances across the 2017 plantation.
 ```{r}
 ggplot(plots_2017, aes(x=sd_tree_c_ha)) +
   geom_histogram(aes(y = stat(density)), color = "gray20", fill = "darkolivegreen", alpha = 0.7) +
@@ -530,9 +530,186 @@ plots_2017 |>
 ggplot(aes(x=sd_tree_c_ha)) +
   geom_histogram(aes(y = stat(density), fill = plot_size_m2),color = "gray30", alpha = 0.3) +
   geom_density(aes(fill = plot_size_m2), col = "gray30", alpha = 0.8) +
-  labs(title = "Total Carbon per Tree (mg/ha)")
+  labs(title = "Total Carbon per Tree (mg/ha)",
+       subtitle = "Per Plot")
+
 ```
 
 
 
+Analize the power 
+
+Remember the histogram with the all the calculations of total carbon per tree (mg/ha). Well, as you can see below the sample plots of 77m2 and 154m2 are way more overlapped than the 25m2. 
+
+```{r}
+#Total Tree Carbon (mg/ha)
+mangrove_2017 |> 
+  filter(plot_size_m2 %in% c(25.133, 76.969, 153.938)) |> 
+ggplot(aes(x=total_tree_mg_c_ha)) +
+  geom_histogram(aes(y = stat(density), fill = plot_size_m2),color = "gray30", alpha = 0.3) +
+  geom_density(aes(fill = plot_size_m2), col = "gray30", alpha = 0.8) +
+  labs(title = "Total Carbon per Tree (mg/ha)")
+  
+```
+
+With that un mind we will create an analysis of the power calculations
+
+```{r}
+random_table <- mangrove_2017 |> 
+  group_by(plot_size_m2) |> 
+  slice_sample(n = 10)
+
+rand_means <- random_table |> 
+  group_by(plot_size_m2) |> 
+  summarise("mean tree carbon (mg/ha)"= mean(total_tree_mg_c_ha),
+            "sd tree carbon (mg/ha)" = sd(total_tree_mg_c_ha))
+
+ggplot(random_table, aes(x = total_tree_mg_c_ha)) + 
+  geom_histogram(aes(y = stat(density), 
+                 fill = plot_size_m2),
+                 col= "gray30",
+                 alpha = 0.6) +
+  geom_density(aes(fill = plot_size_m2),
+               alpha = 0.2) +
+  geom_vline(xintercept = rand_means[[1,2]], color = "red") +
+    geom_vline(xintercept = rand_means[[2,2]], color = "green") +
+    geom_vline(xintercept = rand_means[[3,2]], color = "blue") +
+  ylim(0, 30) +
+  xlim(0,1.5)
+
+```
+
+If you plan to use a two-sample t-test to compare two means, you would use the pwr.t.test function for estimating sample size or power
+
+Use the pwr package data to define the power
+```{r}
+# Create the objects with the sd of each group
+sd_25m = mangrove_plots_2017[[1,5]]
+sd_77m = mangrove_plots_2017[[2,5]]
+sd_154m =  mangrove_plots_2017[[3,5]]
+mean_25m = mangrove_plots_2017[[1,4]]
+mean_77m = mangrove_plots_2017[[2,4]]
+mean_154m = mangrove_plots_2017[[3,4]]
+
+```
+
+
+Define the power when you compare a plot size of 25m2 vs a plot size of 154m2.
+
+A) Power between 25m2 and 154m2
+```{r}
+
+mean_difference_a = mean_25m - mean_154m
+d25_154 = as.numeric(sqrt(sd_25m^2/2 + sd_154m^2/2))
+
+effect_size_a = mean_difference_a / d25_154
+
+power_test_1 <- pwr.t.test(d = round(effect_size_a,2), 
+                           power = 0.90, 
+                           sig.level = 0.05,
+                           type="two.sample",
+                           alternative="two.sided")
+print(power_test_1)
+plot(power_test_1)
+```
+
+Because the means between 25m2 and 154m2 are so different we will only need 10 samples to have a power of 90%
+
+B) Power between 77m2 and 154m2
+```{r}
+mean_difference_b = mean_77m - mean_154m
+d77_154 = as.numeric(sqrt(sd_77m^2/2 + sd_154m^2/2))
+effect_size_b = mean_difference_b / d77_154
+
+
+power_test_2 <- pwr.t.test(d = round(effect_size_b,2), 
+                           power = 0.90, 
+                           sig.level = 0.05,
+                           type="two.sample",
+                           alternative="two.sided")
+print(power_test_2)
+plot(power_test_2)
+
+```
+In this case as the means between 77m2 and 154m2 are closer together we can define that with 50 samples we could have a power of 90%.
+
+
+# Test with my results with random samples
+Create power table with the means and sd of your random table and run a power analysis with the selected random samples to test my results
+
+Test your results 25m2 vs 154m2
+```{r}
+
+samples = 10
+random_table_test <- mangrove_2017 |> 
+  group_by(plot_size_m2) |> 
+  slice_sample(n = samples)
+
+power_table_test <- random_table_test |> 
+  group_by(plot_size_m2) |> 
+  summarise(tot_samples = n(),
+            tot_plot_count = length(unique(plot)),
+            mean_tree_c_ha_mg = mean(total_tree_mg_c_ha),
+            sd_tree_c_ha_mg = sd(total_tree_mg_c_ha)) |> 
+  mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
+
+random_mean_25m = power_table_test[[1,4]]
+random_mean_154m = power_table_test[[3,4]]
+random_sd_25m = power_table_test[[1,5]]
+random_sd_154m = power_table_test[[3,5]]
+
+#Using all the samples
+#Real Difference 
+random_effect_size_a = (random_mean_25m - random_mean_154m) / (as.numeric(sqrt(random_sd_25m^2/2 + random_sd_154m^2/2)))
+
+print(effect_size_a)
+print(random_effect_size_a)
+
+ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plot_size_m2)) +
+  geom_point() +
+  geom_hline(yintercept = power_table_test[[1,4]], color = "red")  +
+  geom_hline(yintercept = power_table_test[[3,4]], color = "blue") +
+  labs(title = "Total Cabron per Tree (mg/ha)",
+       subtitle = "Random sample size",
+       caption = paste("Difference between means is:", round(random_effect_size_a,2)))
+  
+  
+```
+
+Test your results 77m2 vs 154m2
+```{r}
+samples = 100
+random_table_test <- mangrove_2017 |> 
+  group_by(plot_size_m2) |> 
+  slice_sample(n = samples)
+
+power_table_test <- random_table_test |> 
+  group_by(plot_size_m2) |> 
+  summarise(tot_samples = n(),
+            tot_plot_count = length(unique(plot)),
+            mean_tree_c_ha_mg = mean(total_tree_mg_c_ha),
+            sd_tree_c_ha_mg = sd(total_tree_mg_c_ha)) |> 
+  mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
+
+random_mean_77m = power_table_test[[2,4]]
+random_mean_154m = power_table_test[[3,4]]
+random_sd_77m = power_table_test[[2,5]]
+random_sd_154m = power_table_test[[3,5]]
+
+#Using all the samples
+#Real Difference 
+random_effect_size_b = (random_mean_77m - random_mean_154m) / (as.numeric(sqrt(random_sd_77m^2/2 + random_sd_154m^2/2)))
+
+print(effect_size_b)
+print(random_effect_size_b)
+
+ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plot_size_m2)) +
+  geom_point() +
+    geom_hline(yintercept = power_table_test[[2,4]], color = "green") +
+    geom_hline(yintercept = power_table_test[[3,4]], color = "blue") +
+  labs(title = "Total Cabron per Tree (mg/ha)",
+       subtitle = "Random sample size",
+       caption = paste("Difference between means is:", round(random_effect_size_b,2)))
+
+```
 
