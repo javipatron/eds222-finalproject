@@ -20,14 +20,13 @@ rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-fin
 data <- file.path(rootdir,"data")
 ```
 
-##Read, Understand and clean the data
+##Read, clean and understand the data
 
 Reading the .csv file
 ```{r}
 #Load data Mangrove Data
 mangrove_df <- read_csv(here::here("data","clean_monitoring_data_javier.csv")) |> clean_names()
 ```
-
 
 Understanding the data with different functions
 ```{r}
@@ -80,7 +79,7 @@ plots <- mangrove_df |>
 
 ```
 
-Create a table of samples per plot but grouping by sample size
+Create a table of samples per plot but grouping them by sample size
 ```{r}
 mangrove_plots_summary <- mangrove_df |> 
   group_by(plantation_year, plot_size_m2) |> 
@@ -96,25 +95,11 @@ kable(mangrove_plots_summary)
 
 ```
 
-Create a plot to demonstrate the variance on total carbon that each tree has in mg/ha vs. sample size
-```{r}
-ggplot(plots, aes(x= sample_count, y = sd_tree_c_ha)) +
-  geom_point(aes(color = plantation_year)) +
-  geom_smooth(method = lm,
-              color = "cyan4",
-              se = F) +
-  labs(title = "Tree Carbon variance per Sample plot",
-       x = "Samples per Plot",
-       y = "Variance of Tree carbon (mg/ha)")
 
-```
+## The 2017 Decision
+Now lets focus on the 2017 plantation year and define our questions
 
-
-
-## Creating our question and focusing on the 2017 year.
-Lets focus on the 2017 plantation year
-
-Why?
+#### Why?
 - We have enough relevant data. 
 - It has the highest variance from the three replantation years. 
 - There are 3 different sampling collection efforts.
@@ -174,21 +159,48 @@ kable(mangrove_plots_2017)
 
 ```
 
+Graph the effect of tree size and total carbon
 
-## Analyzing the different options to answer our initial research question:
+$$tree carbon_i=\beta_{0}+\beta_{1} \cdot tree size_i +\varepsilon_i$$
 
-**Option 1:** Tree Carbon (mg/ha) vs. Sample Types - Create your hypothesis testing, and define the confidence intervals for the Tree Carbon sequestration in mg per hectare depending on the sample type comparison.
+Create a graph of two numerical axis to create an analysis
 
-**Option 2:** What is the density difference between sample sizes and effect of variance in the Total Tree Carbon (mg/ha).
+```{r}
+# Tree Size vs. Tree Carbon (No Interaction)
 
-Explore the differences.
-- Smaller plot size, higher density but higher variability.
-- Bigger plot sizes, lower density but also lower variability.
-- Calculate the Power with the information that we have.
+mangrove_2017 |> 
+  ggplot(aes(x=cd_chatting_m, y = total_tree_kg_c)) +
+  geom_point(alpha = 0.8, color = "darkolivegreen") +
+  labs(title = "Tree Size Effect of Total Carbon",
+       x = "Tree Size (chatt m)",
+       y = "Tree Carbon (kg)")
+
+```
+
+Adding the Interaction
+
+$$tree carbon_i=\beta_{0}+\beta_{1} \cdot tree size_i +\beta_{2} \cdot \text plot size +\varepsilon_i$$
+
+```{r}
+# Tree Size vs. Tree Carbon (Interaction)
+
+mangrove_2017 |> 
+  ggplot(aes(x=cd_chatting_m, y = total_tree_mg_c_ha, color = plot_size_m2)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Tree  Size Effect in Total Carbon per Ha",
+       x = "Tree Size (chatt m)",
+       y = "Tree Carbon (mg/ha)") +
+  scale_color_brewer(palette = "Dark2")
+
+```
 
 
-## Starting the code per code chunks
-## **Option 1:**
+##Analyzing the different options to answer our initial research question:
+
+##Questions 1: 
+
+##### Tree Carbon (mg/ha) vs. Sample Types - Create your hypothesis testing, and define the confidence intervals for the Tree Carbon sequestration in mg per hectare depending on the sample type comparison.
+
 
 Plot Size vs. Total Tree Carbon
 ```{r}
@@ -388,10 +400,8 @@ Conclusion:
 As we can see in the second graph, now both means are much closer together but satistically significantly enough difference to tell they are different. With this data analysis and results we can help the actual client have a better understanding on their plot sampling sizes, concluding that smaller plot sizes somehow are getting a large carbon estimate.
 
 
-# Option 2 : Distributions and Power
 
-Now, let analyse what is the effect of this difference in densities and what is this variance telling us.
-
+## **Question 2:** What is the density difference between sample sizes and what is the effect of variance in the calculated Total Tree Carbon (mg/ha).
 
 Creating a new table and graph to easily visualize what is the density per plot type (Number of trees per m2)
 ```{r}
@@ -424,6 +434,10 @@ ggplot(density_df, aes(x= as.factor(plot_size_m2), y= density, fill = as.factor(
   scale_fill_discrete(name = "Plot Type")
 
 ```
+As we can see in this graph, plot sizes have higher density, but also higher variability, In contrast bigger plot sizes have lower density, and also lower variability.
+
+
+But, how this affects our calculations and what are the estimated number of samples to have an estimate of the results
 
 
 In this graph we are looking at how the Carbon mean per plot doesn´t change much when you increase the samples. We can see that the total carbon is more influenced by the density than the number of samples per plot.
@@ -432,9 +446,13 @@ In this graph we are looking at how the Carbon mean per plot doesn´t change muc
 ggplot(density_df, aes(x= sample_count, y= mean_carbon_mg_ha, color = as.factor(plot_size_m2) )) +
   geom_point() +
   labs(title= "Carbon mean per sample count",
+       subtitle = 2017,
        x = "Sample Count",
        y = "Carbon Mean (mh/ha)",
-       col ="Plot Size (m2)" )
+       col ="Plot Size (m2)" ) +
+   geom_smooth(method = lm,
+              color = "cyan4",
+              se = F) 
 ```
 
 
@@ -446,7 +464,8 @@ mangrove_2017 |>
 ggplot(aes(x=total_tree_mg_c_ha)) +
   geom_histogram(aes(y = stat(density), fill = plot_size_m2),color = "gray30", alpha = 0.3) +
   geom_density(aes(fill = plot_size_m2), col = "gray30", alpha = 0.8) +
-  labs(title = "Total Carbon per Tree (mg/ha)")
+  labs(title = "Total Carbon per Tree (mg/ha)",
+       subtitle = "2017")
   
 ```
 
@@ -455,7 +474,6 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
 ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha, color = plot_size_m2)) +
   geom_freqpoly(aes(y = stat(density)))
 ```
-
 Comparing the variation of samples per plot
 
 Question: What technique of mangrove sampling will bring a lower variance in Total Tree Carbon calculation (mg/ha).
@@ -496,6 +514,8 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
        subtitle = "154m2")
 
 ```
+Now, let analyse what is the effect of this difference in densities and what is this variance telling us.
+
 
 Create a plot showing the relationship between sample size and variation of the calculated tree carbon (mg/ha)
 ```{r}
@@ -536,10 +556,12 @@ ggplot(aes(x=sd_tree_c_ha)) +
 ```
 
 
+Distributions and Power
 
-Analize the power 
+Calculate the power and number of samples.
 
-Remember the histogram with the all the calculations of total carbon per tree (mg/ha). Well, as you can see below the sample plots of 77m2 and 154m2 are way more overlapped than the 25m2. 
+
+Do you remember the histogram with the all the calculations of total carbon per tree (mg/ha)? Well, as you can see below the sample plots of 77m2 and 154m2 are way more overlapped than the 25m2. 
 
 ```{r}
 #Total Tree Carbon (mg/ha)
@@ -554,34 +576,9 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
 
 With that un mind we will create an analysis of the power calculations
 
-```{r}
-random_table <- mangrove_2017 |> 
-  group_by(plot_size_m2) |> 
-  slice_sample(n = 10)
 
-rand_means <- random_table |> 
-  group_by(plot_size_m2) |> 
-  summarise("mean tree carbon (mg/ha)"= mean(total_tree_mg_c_ha),
-            "sd tree carbon (mg/ha)" = sd(total_tree_mg_c_ha))
+In this case we wull use the pwr.t.test function for estimating sample size or power, as our data contains a two-sample t-test to compare the two means.
 
-ggplot(random_table, aes(x = total_tree_mg_c_ha)) + 
-  geom_histogram(aes(y = stat(density), 
-                 fill = plot_size_m2),
-                 col= "gray30",
-                 alpha = 0.6) +
-  geom_density(aes(fill = plot_size_m2),
-               alpha = 0.2) +
-  geom_vline(xintercept = rand_means[[1,2]], color = "red") +
-    geom_vline(xintercept = rand_means[[2,2]], color = "green") +
-    geom_vline(xintercept = rand_means[[3,2]], color = "blue") +
-  ylim(0, 30) +
-  xlim(0,1.5)
-
-```
-
-If you plan to use a two-sample t-test to compare two means, you would use the pwr.t.test function for estimating sample size or power
-
-Use the pwr package data to define the power
 ```{r}
 # Create the objects with the sd of each group
 sd_25m = mangrove_plots_2017[[1,5]]
@@ -593,9 +590,7 @@ mean_154m = mangrove_plots_2017[[3,4]]
 
 ```
 
-
-Define the power when you compare a plot size of 25m2 vs a plot size of 154m2.
-
+Define the number of counts `n` by using the plot size of 25m2 vs a plot size of 154m2.
 A) Power between 25m2 and 154m2
 ```{r}
 
@@ -610,10 +605,8 @@ power_test_1 <- pwr.t.test(d = round(effect_size_a,2),
                            type="two.sample",
                            alternative="two.sided")
 print(power_test_1)
-plot(power_test_1)
 ```
-
-Because the means between 25m2 and 154m2 are so different we will only need 10 samples to have a power of 90%
+Because the means between 25m2 and 154m2 are so different we will only need 10 samples to have a power of 90%.
 
 B) Power between 77m2 and 154m2
 ```{r}
@@ -671,14 +664,14 @@ ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plo
   geom_hline(yintercept = power_table_test[[3,4]], color = "blue") +
   labs(title = "Total Cabron per Tree (mg/ha)",
        subtitle = "Random sample size",
-       caption = paste("Difference between means is:", round(random_effect_size_a,2)))
+       caption = paste("Real means difference is:",round(effect_size_a,2),"(mg/ha)" ,"\nRandom difference between means is:", round(random_effect_size_a,2), "(mg/ha)"))
   
   
 ```
 
 Test your results 77m2 vs 154m2
 ```{r}
-samples = 100
+samples = 50
 random_table_test <- mangrove_2017 |> 
   group_by(plot_size_m2) |> 
   slice_sample(n = samples)
@@ -709,7 +702,7 @@ ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plo
     geom_hline(yintercept = power_table_test[[3,4]], color = "blue") +
   labs(title = "Total Cabron per Tree (mg/ha)",
        subtitle = "Random sample size",
-       caption = paste("Difference between means is:", round(random_effect_size_b,2)))
+       caption = paste("Real means difference is:",round(effect_size_b,2),"(mg/ha)" ,"\nRandom difference between means is:", round(random_effect_size_b,2), "(mg/ha)"))
 
 ```
 

@@ -824,16 +824,19 @@ rand_means <- random_table |>
 
 ```
 
+
+
 Create a histogram too visualize the new 10 random numbers and see the overlap between the two sample sizes. This will help us understand the power calculation. Remember that if the overlap is high then you need a higher number of samples to increase your probability. 
 
 ```{r}
 random_table <- mangrove_2017 |> 
   group_by(plot_size_m2) |> 
-  slice_sample(n = 300)
+  slice_sample(n = 10)
 
 rand_means <- random_table |> 
   group_by(plot_size_m2) |> 
-  summarise(mean = mean(total_tree_mg_c_ha))
+  summarise("mean tree carbon (mg/ha)"= mean(total_tree_mg_c_ha),
+            "sd tree carbon (mg/ha)" = sd(total_tree_mg_c_ha))
 
 ggplot(random_table, aes(x = total_tree_mg_c_ha)) + 
   geom_histogram(aes(y = stat(density), 
@@ -848,70 +851,69 @@ ggplot(random_table, aes(x = total_tree_mg_c_ha)) +
   ylim(0, 30) +
   xlim(0,1.5)
 
+```
 
+DEFINE POWER
+
+Use the pwr package data to define the power
+```{r}
+# Create the objects with the sd of each group
+sd_25m = mangrove_plots_2017[[1,8]]
+sd_77m = mangrove_plots_2017[[2,8]]
+sd_154m =  mangrove_plots_2017[[3,8]]
+mean_25m = mangrove_plots_2017[[1,6]]
+mean_77m = mangrove_plots_2017[[2,6]]
+mean_154m = mangrove_plots_2017[[3,6]]
 ```
 
 
-Calculate power table with the means and sd of your random table
+If you plan to use a two-sample t-test to compare two means, you would use the pwr.t.test function for estimating sample size or power.
+
+A) Power between 25m2 and 154m2
 ```{r}
-#Create a table with means and SD per plot size
-power_table <- random_table |> 
-  group_by(plot_size_m2) |> 
-  summarise(tot_samples = n(),
-            tot_plot_count = length(unique(plot)),
-            mean_chatting_size_m = mean(cd_chatting_m),
-            mean_tree_c_kg = mean(total_tree_kg_c),
-            mean_tree_c_ha_mg = mean(total_tree_mg_c_ha),
-            sd_chatting_size_m = sd(cd_chatting_m),
-            sd_tree_c_kg = mean(total_tree_kg_c),
-            sd_tree_c_ha_mg = sd(total_tree_mg_c_ha)) |> 
-  mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
+
+mean_difference_a = mean_25m - mean_154m
+d25_154 = as.numeric(sqrt(sd_25m^2/2 + sd_154m^2/2))
+
+effect_size_a = mean_difference_a / d25_154
+
+power_test_1 <- pwr.t.test(d = round(effect_size_a,2), 
+                           power = 0.90, 
+                           sig.level = 0.05,
+                           type="two.sample",
+                           alternative="two.sided")
+print(power_test_1)
+plot(power_test_1)
 ```
 
+Because the means between 25m2 and 154m2 are so different we will only need 10 samples to have a power of 90%
 
-Use the pwr() package to define power with the random samples.
+B) Power between 77m2 and 154m2
 ```{r}
-# Calculate power with the random samples of 10
+mean_difference_b = mean_77m - mean_154m
+d77_154 = as.numeric(sqrt(sd_77m^2/2 + sd_154m^2/2))
+effect_size_b = mean_difference_b / d77_154
 
-random_sd_25m = power_table[[1,9]]
-random_sd_154m =  power_table[[3,9]]
 
-alpha = 0.05
-power = 0.90
-random_d = as.numeric(sqrt(random_sd_25m^2/300 + random_sd_154m^2/300))
-print(random_d)
-
-pwr.t.test(n =300, 
-           d = random_d, 
-           sig.level=.05, 
-           type="one.sample",
-           alternative = "greater")
+power_test_2 <- pwr.t.test(d = round(effect_size_b,2), 
+                           power = 0.90, 
+                           sig.level = 0.05,
+                           type="two.sample",
+                           alternative="two.sided")
+print(power_test_2)
+plot(power_test_2)
 
 ```
+In this case as the means between 77m2 and 154m2 are closer together we can define that with 50 samples we could have a power of 90%.
 
 
-Use the pwr package data to define the power with the whole table
-```{r}
-# Calculate the power with all data
-sd_25m = mangrove_plots_2017[[1,9]]
-sd_154m =  mangrove_plots_2017[[3,9]]
+# Test with Random Samples
+Create power table with the means and sd of your random table and run a power analysis with the selected random samples to test my results
 
-alpha = 0.05
-power = 0.90
-d = as.numeric(sqrt(sd_25m^2/2 + sd_154m^2/2))
-print(d)
-
-#Use pwr.t2n.test when the sample size are not the same
-pwr.t2n.test(n1 = 321, n2= 3467, d=d )
-
-```
-
-
+Test your results
 ```{r}
 
-samples = 100
-
-
+samples = 300
 random_table_test <- mangrove_2017 |> 
   group_by(plot_size_m2) |> 
   slice_sample(n = samples)
@@ -920,27 +922,26 @@ power_table_test <- random_table_test |>
   group_by(plot_size_m2) |> 
   summarise(tot_samples = n(),
             tot_plot_count = length(unique(plot)),
-            mean_chatting_size_m = mean(cd_chatting_m),
-            mean_tree_c_kg = mean(total_tree_kg_c),
             mean_tree_c_ha_mg = mean(total_tree_mg_c_ha),
-            sd_chatting_size_m = sd(cd_chatting_m),
-            sd_tree_c_kg = mean(total_tree_kg_c),
             sd_tree_c_ha_mg = sd(total_tree_mg_c_ha)) |> 
   mutate(plot_size_m2 = c("25m2", "77m2", "154m2"))
 
-s1 = power_table_test[[1,9]]
-s2 =  power_table_test[[3,9]]
+random_mean_25m = power_table_test[[1,4]]
+random_mean_77m = power_table_test[[2,4]]
+random_mean_154m = power_table_test[[3,4]]
+random_sd_25m = power_table_test[[1,5]]
+random_sd_77m = power_table_test[[2,5]]
+random_sd_154m = power_table_test[[3,5]]
 
-alpha = 0.05
-power = 0.90
-random_d = as.numeric(sqrt(s1^2/samples + s2^2/samples))
+#Using all the samples
+#Real Difference 
+random_effect_size_a = (random_mean_25m - random_mean_154m) / (as.numeric(sqrt(random_sd_25m^2/2 + random_sd_154m^2/2)))
 
-pwr.t.test(n =samples, 
-           d = random_d, 
-           sig.level=.05, 
-           type="one.sample",
-           alternative = "greater")
+
+print(effect_size_a)
+print(random_effect_size_a)
 
 
 ```
+
 
