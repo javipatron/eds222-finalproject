@@ -316,18 +316,6 @@ alpha = 0.2) +
   geom_density()
 ```
 
-```{r}
-#Variable Total Carbon per tree (mg)
-mangrove_2017 |> 
-  ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha ,color = plot_size_m2)) +
-  geom_point(aes(y= mean(total_tree_mg_c_ha)), size = 10, alpha = 0.9, color = "darkblue", shape = 3 ) +
-  geom_point(alpha = 0.7) +
-  labs(title = "Tree mg C vs Plot Type") +
-  scale_color_brewer(palette = "Dark2")
-
-
-```
-
 Option 1:
 State your null and alternative hypotheses
 
@@ -628,6 +616,8 @@ mangrove_2017 |>
        y = "Tree Carbon (kg)")
 
 ```
+
+
 Using `lm()` to estimate $\hat\beta_0$, $\hat\beta_1$ using this sample of data.
 
 ```{r}

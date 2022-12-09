@@ -35,6 +35,7 @@ dim(mangrove_df)
 names(mangrove_df)
 skimr::skim(mangrove_df)
 summary(mangrove_df)
+str(mangrove_2017)
 
 unique(mangrove_df$plantation_year)
 unique(mangrove_df$plot_size_m2)
@@ -94,7 +95,6 @@ mangrove_plots_summary <- mangrove_df |>
 kable(mangrove_plots_summary)
 
 ```
-
 
 ## The 2017 Decision
 Now lets focus on the 2017 plantation year and define our questions
@@ -197,7 +197,7 @@ mangrove_2017 |>
 
 ##Analyzing the different options to answer our initial research question:
 
-##Questions 1: 
+### Questions 1: 
 
 ##### Tree Carbon (mg/ha) vs. Sample Types - Create your hypothesis testing, and define the confidence intervals for the Tree Carbon sequestration in mg per hectare depending on the sample type comparison.
 
@@ -399,8 +399,6 @@ Conclusion:
 
 As we can see in the second graph, now both means are much closer together but satistically significantly enough difference to tell they are different. With this data analysis and results we can help the actual client have a better understanding on their plot sampling sizes, concluding that smaller plot sizes somehow are getting a large carbon estimate.
 
-
-
 ## **Question 2:** What is the density difference between sample sizes and what is the effect of variance in the calculated Total Tree Carbon (mg/ha).
 
 Creating a new table and graph to easily visualize what is the density per plot type (Number of trees per m2)
@@ -436,9 +434,7 @@ ggplot(density_df, aes(x= as.factor(plot_size_m2), y= density, fill = as.factor(
 ```
 As we can see in this graph, plot sizes have higher density, but also higher variability, In contrast bigger plot sizes have lower density, and also lower variability.
 
-
 But, how this affects our calculations and what are the estimated number of samples to have an estimate of the results
-
 
 In this graph we are looking at how the Carbon mean per plot doesn´t change much when you increase the samples. We can see that the total carbon is more influenced by the density than the number of samples per plot.
 ```{r}
@@ -660,11 +656,23 @@ print(random_effect_size_a)
 
 ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plot_size_m2)) +
   geom_point() +
-  geom_hline(yintercept = power_table_test[[1,4]], color = "red")  +
-  geom_hline(yintercept = power_table_test[[3,4]], color = "blue") +
+  geom_hline(aes(yintercept = effect_size_a, 
+                 linetype = "real"), 
+             color = "gray50", 
+             size = .5) +
+  geom_hline(aes(yintercept = random_effect_size_a, 
+                 linetype = "random"), 
+             color = "gray10", 
+             size = .5) +
+  scale_shape_manual("", values= c("mean" = "+")) +
+  scale_linetype_manual(name = "Means difference", 
+                        values = c(2, 2), 
+                        guide = guide_legend(
+                          override.aes = list(
+                            color = c("gray50", "gray10")))) +
   labs(title = "Total Cabron per Tree (mg/ha)",
        subtitle = "Random sample size",
-       caption = paste("Real means difference is:",round(effect_size_a,2),"(mg/ha)" ,"\nRandom difference between means is:", round(random_effect_size_a,2), "(mg/ha)"))
+       caption = paste("Difference between the real sample means is:",round(mean_difference_a,2),"(mg/ha)" ,"\nDifference between the randomly relected samples mean is:", round((random_mean_25m - random_mean_154m),2), "(mg/ha)"))
   
   
 ```
@@ -698,11 +706,23 @@ print(random_effect_size_b)
 
 ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plot_size_m2)) +
   geom_point() +
-    geom_hline(yintercept = power_table_test[[2,4]], color = "green") +
-    geom_hline(yintercept = power_table_test[[3,4]], color = "blue") +
+  geom_hline(aes(yintercept = effect_size_b, 
+                 linetype = "real"), 
+             color = "gray50", 
+             size = .5) +
+  geom_hline(aes(yintercept = random_effect_size_b, 
+                 linetype = "random"), 
+             color = "gray10", 
+             size = .5) +
+  scale_shape_manual("", values= c("mean" = "+")) +
+  scale_linetype_manual(name = "Means Difference", 
+                        values = c(2, 2), 
+                        guide = guide_legend(
+                          override.aes = list(
+                            color = c("gray50", "gray10")))) +
   labs(title = "Total Cabron per Tree (mg/ha)",
        subtitle = "Random sample size",
-       caption = paste("Real means difference is:",round(effect_size_b,2),"(mg/ha)" ,"\nRandom difference between means is:", round(random_effect_size_b,2), "(mg/ha)"))
+       caption = paste("Difference between the real sample means is:",round(mean_difference_b,2),"(mg/ha)" ,"\nDifference between the randomly relected samples mean is:", round((random_mean_77m - random_mean_154m),2), "(mg/ha)"))
 
 ```
 
