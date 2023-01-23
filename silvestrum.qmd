@@ -1,0 +1,117 @@
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+library(knitr)
+library(pwr)
+
+```
+
+```{r}
+#Setting my filepaths
+rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject")
+data <- file.path(rootdir,"data")
+
+```
+
+Reading the .csv files
+
+```{r}
+#Load data Mangrove Data
+mangrove_df <- read_csv(here::here("data","clean_monitoring_data_javier.csv")) |> clean_names()
+
+mangrove_df_b <- read_csv(here::here("data","monitoring_siteB_data_javier.csv")) |> clean_names() |> na.omit()
+
+```
+
+
+# Site A
+
+Understand the data with R methods
+```{r}
+#Wranggle the data for table A
+dim(mangrove_df)
+names(mangrove_df)
+skimr::skim(mangrove_df)
+summary(mangrove_df)
+
+unique(mangrove_df$plantation_year)
+unique(mangrove_df$plot_size_m2)
+
+class(mangrove_df$plantation_year)
+
+```
+
+
+#Cleaning and adding some changes to the data
+```{r}
+#Changing some data
+mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
+mangrove_df$plot <- as.character(mangrove_df$plot)
+mangrove_df$plot_size_m2 <- as.factor(mangrove_df$plot_size_m2)
+
+
+```
+
+Create a table that is grouped by the each plantation year containing the total number of sample plots and the total number of samples trees per plantation.
+
+```{r}
+
+mangrove_summary <- mangrove_df |> 
+  group_by(plantation_year) |> 
+  summarise(plot_count = length(unique(plot)),
+          tot_samples = n())
+          
+knitr::kable(mangrove_summary)
+
+```
+
+Create a table that shows the samples per each plot
+
+```{r}
+
+plots_a <- mangrove_df |> 
+  group_by(plantation_year,plot,plot_size_m2) |> 
+  summarise(plot = unique(plot),
+            sample_count = n())
+
+```
+
+
+
+Create a table of samples per plot but grouping by sample size
+
+```{r}
+mangrove_plots_summary <- mangrove_df |> 
+  group_by(plantation_year, plot_size_m2) |> 
+  summarise(plot_size_m2 = unique(plot_size_m2),
+            plot_count = length(unique(plot)),
+            tot_samples = n(),
+            mean_plant_size_cm = (mean(cd_chatting_m)),
+            mean_tot_carbon_g_c = (mean(total_tree_kg_c)),
+            sd_plant_size = sd(cd_chatting_m),
+            sd_tot_carbon_kg_c = sd(total_tree_kg_c))
+
+kable(mangrove_plots_summary)
+```
+
+
+# Site B
+
+```{r}
+mangrove_plots_b_summary <- mangrove_df_b |> 
+  group_by(year) |> 
+  summarise(plot_count = length(unique(name)),
+            tot_samples = n(),
+            mean_total_c_t_ha = (mean(total_c_t_ha)),
+            sd_total_c_t_ha = sd(total_c_t_ha))
+```
+
+
+```{r}
+plots_b <- mangrove_df_b |> 
+  group_by(year, name) |> 
+  summarise(sample_count = n())
+```
+
+

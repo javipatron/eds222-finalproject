@@ -44,7 +44,7 @@ class(mangrove_df$plantation_year)
 
 ```
 
-#Cleaning and adding some changes to the data
+## Cleaning and adding some changes to the data
 ```{r}
 #Changing some data
 mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
@@ -161,7 +161,7 @@ kable(mangrove_plots_2017)
 
 Graph the effect of tree size and total carbon
 
-$$tree carbon_i=\beta_{0}+\beta_{1} \cdot tree size_i +\varepsilon_i$$
+$$tree carbon_{kg}=\beta_{0}+\beta_{1} \cdot tree size_i +\varepsilon_i$$
 
 Create a graph of two numerical axis to create an analysis
 
@@ -179,7 +179,7 @@ mangrove_2017 |>
 
 Adding the Interaction
 
-$$tree carbon_i=\beta_{0}+\beta_{1} \cdot tree size_i +\beta_{2} \cdot \text plot size +\varepsilon_i$$
+$$tree carbon_{kg/ha} =\beta_{0}+\beta_{1} \cdot tree size_i +\beta_{2} \cdot \text plot size +\varepsilon_i$$
 
 ```{r}
 # Tree Size vs. Tree Carbon (Interaction)
@@ -242,10 +242,10 @@ Calculate the Standard Error
 $$SE = \sqrt{\frac{s_1^2}{n_1} + \frac{s^2_2}{n_2}}$$
 ```{r}
 #Define the Standard Error
-n_25m = mangrove_plots_2017$tot_samples[1]
+
 n_154m = mangrove_plots_2017$tot_samples[3]
 
-s_25m =  mangrove_plots_2017$sd_tree_c_ha[1]
+
 s_154m =  mangrove_plots_2017$sd_tree_c_ha[3]
 
 SE_1 = as.numeric(sqrt(s_25m^2/n_25m + s_154m^2/n_154m))
@@ -399,13 +399,13 @@ Conclusion:
 
 As we can see in the second graph, now both means are much closer together but satistically significantly enough difference to tell they are different. With this data analysis and results we can help the actual client have a better understanding on their plot sampling sizes, concluding that smaller plot sizes somehow are getting a large carbon estimate.
 
-## **Question 2:** What is the density difference between sample sizes and what is the effect of variance in the calculated Total Tree Carbon (mg/ha).
+## **Question 2:** 
+
+What is the density difference between sample sizes and what is the effect of variance in the calculated Total Tree Carbon (mg/ha).
 
 Creating a new table and graph to easily visualize what is the density per plot type (Number of trees per m2)
 ```{r}
-#Checking the type of class per column
-str(plots_2017)
-str(mangrove_2017)
+
 
 #Changing the column to numeric
 mangrove_df$plot_size_m2_num <- as.numeric(mangrove_df$plot_size_m2)
@@ -470,6 +470,9 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
 ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha, color = plot_size_m2)) +
   geom_freqpoly(aes(y = stat(density)))
 ```
+
+
+
 Comparing the variation of samples per plot
 
 Question: What technique of mangrove sampling will bring a lower variance in Total Tree Carbon calculation (mg/ha).
@@ -534,9 +537,9 @@ ggplot(plots_2017, aes(x=sd_tree_c_ha)) +
   geom_histogram(aes(y = stat(density)), color = "gray20", fill = "darkolivegreen", alpha = 0.7) +
   geom_density(col = "gray30", alpha = 0.15, fill = "green") +
   labs(title = "Total Carbon per Tree (mg/ha)",
-       subtitle = "All Samples",
+       subtitle = "All Plots",
        x = "Tree Carbon Variance (mg/ha)",
-       y = "Plots")
+       y = "Unique Plots")
 ```
 
 But now if you separate per plot type you have something different
@@ -547,12 +550,14 @@ ggplot(aes(x=sd_tree_c_ha)) +
   geom_histogram(aes(y = stat(density), fill = plot_size_m2),color = "gray30", alpha = 0.3) +
   geom_density(aes(fill = plot_size_m2), col = "gray30", alpha = 0.8) +
   labs(title = "Total Carbon per Tree (mg/ha)",
-       subtitle = "Per Plot")
+       subtitle = "Per Plot",
+       x = "Tree Cabron Variance (mg/ha)",
+       y = "Unique Plots")
 
 ```
 
 
-Distributions and Power
+
 
 Calculate the power and number of samples.
 
@@ -570,10 +575,10 @@ ggplot(aes(x=total_tree_mg_c_ha)) +
   
 ```
 
+
+
 With that un mind we will create an analysis of the power calculations
-
-
-In this case we wull use the pwr.t.test function for estimating sample size or power, as our data contains a two-sample t-test to compare the two means.
+In this case we wil use the pwr.t.test function for estimating sample size or power, as our data contains a two-sample t-test to compare the two means.
 
 ```{r}
 # Create the objects with the sd of each group
@@ -621,6 +626,8 @@ plot(power_test_2)
 
 ```
 In this case as the means between 77m2 and 154m2 are closer together we can define that with 50 samples we could have a power of 90%.
+
+
 
 
 # Test with my results with random samples

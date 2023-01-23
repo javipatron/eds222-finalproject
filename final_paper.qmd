@@ -1,10 +1,11 @@
 ---
 title: "An Statistical Mangrove Analysis Post"
+description: "A blue cabron analysis based on the skills learned from the course of Statistics for Environmental Data Science at the Bren School of Environmental Science & Management"
 author:
   name: Javier Patrón
   affiliation: MEDS
   affiliation-url: http://ucsb-meds.github.io
-date: "`r Sys.Date()`"
+date: 2022-12-09
 always_allow_html: yes
 
 format:
@@ -16,7 +17,7 @@ code-block-bg: true
 code-block-border-left: "#6B5A75"
 categories: [MEDS, Statistics, R, Mangroves]
 citation: 
-  url: TBD
+  url: https://github.com/javipatron
 ---
 
 ```{r, echo = F, warning = F, message = F}
@@ -28,6 +29,7 @@ library(pwr)
 library(xtable)
 library(kableExtra)
 library(broom)
+library(plotly)
 ```
 
 ## Introduction
@@ -50,10 +52,14 @@ The data are real field measurements from mangrove tree´s over 4 different repl
 
 ```{r, echo = F, warning = F, message = F}
 #Setting my filepaths
-rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject")
-data <- file.path(rootdir,"data")
-mangrove_df <- read_csv(here::here("data","clean_monitoring_data_javier.csv")) |> clean_names()
+#rootdir <- ("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject")
+#data <- file.path(rootdir,"data")
+#mangrove_df <- read_csv("data","clean_monitoring_data_javier.csv") |> clean_names()
 
+mangrove_df<- read_csv("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject/data/clean_monitoring_data_javier.csv") |> 
+  clean_names()
+
+#/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject/data/clean_monitoring_data_javier.csv
 ```
 
 ```{r, echo = F, warning = F, message = F}
@@ -61,12 +67,11 @@ mangrove_df <- read_csv(here::here("data","clean_monitoring_data_javier.csv")) |
 mangrove_df$plantation_year <- as.character(mangrove_df$plantation_year)
 mangrove_df$plot <- as.character(mangrove_df$plot)
 mangrove_df$plot_size_m2 <- as.factor(mangrove_df$plot_size_m2)
-
 ```
 
 #### Limitations, spatial and temporal features.
 
-The dataset has a measurement record for each tree´s height and canopy.With those measurements, Silvestrum has calculated the total tree carbon in (kg) and the total tree carbon per hectare in (Mg/ha). In this analysis, we will assume that the correct protocols and equations were followed for this purpose, and this analysis is dependent from those results.
+The dataset has a measurement record for each tree´s height and canopy. With those measurements, Silvestrum has calculated the total tree carbon in (kg) and the total tree carbon per hectare in (Mg/ha). In this analysis, we will assume that the correct protocols and equations were followed for this purpose, and this analysis is dependent from those results.
 
 Regarding the dataset, the above and below ground carbon storage was assessed using a nested sub-sampling protocol along the 25m2, 77m2, and 154m2 transect following the [Kauffman and Donato](https://www.cifor.org/publications/pdf_files/WPapers/WP86CIFOR.pdf "Reference #4") procedure. The equations for above and below ground biomass are defined by [Comley and McGuiness.](https://www.researchgate.net/publication/248899546_Above-_and_below-ground_biomass_and_allometry_of_four_common_northern_Australian_mangroves "Reference #5")
 
@@ -76,10 +81,9 @@ To get you familiarized, the table below shows the first 5 rows of the data whic
 
 ```{r, echo =F, message = F, warning= F}
 
-head(mangrove_df) |> 
+head(mangrove_df) %>% 
   kbl(align=rep('c', 5),
-      caption ="Table 1. Full Mangrove Data Set (head)",
-      position = "left") %>%
+      caption = "Table 1. Full Mangrove Data Set (head)") %>%
   kable_paper("hover", full_width = F)
 ```
 
@@ -101,7 +105,7 @@ mangrove_summary %>%
   row_spec(2, bold = T, color = "gray10", background = "lightblue")
 ```
 
-As we can see in the table above, the 2017 plantation year has an exciting number of samples, different sample plot sizes, and high variation of total carbon in mg per hectare. We will focus on this year to answer our questions.
+As we can see in the table above, the 2017 plantation year has an exciting number of samples, different sample plot sizes, and high variation of total carbon in Mg per hectare. We will focus on this year to answer our questions.
 
 The table #3 contains only information from the 2017 plantation year. We will use this filter to analyse the different questions, and interpret our results.
 
@@ -138,11 +142,11 @@ plots_2017 <- mangrove_2017 |>
 
 ```
 
-Now let us take a look at the effect of sample plot size and the total tree carbon (Mg/ha).
+Now let us take a closer look at the effect of sample plot size and the total tree carbon (Mg/ha).
 
 ```{r}
 #Boxplot
-mangrove_2017 |>
+boxplot_2017 <- mangrove_2017 |>
   ggplot(aes(x=plot_size_m2, y = total_tree_mg_c_ha,color = plot_size_m2)) +
   geom_boxplot() +
   labs(title = "Tree Carbon vs Plot Type",
@@ -151,19 +155,21 @@ mangrove_2017 |>
        y = "Total Tree Carbon (Mg/ha)") +
   scale_color_brewer(palette = "Dark2") 
 
+ggplotly(boxplot_2017)
+
 ```
 
 ## Question 1
 
-The graph above shows a visual difference in carbon means between the 25m2 sample plot and the other two sample plots. So let us analyze the relationship between the 77m2 and the 154m2, with a hypothesis test and see if the means in the total carbon per tree (Mg/ha) are different. *Why this two?* Because visually they look more similar and the seems to be the outlier 25m2.
+The graph above shows a visual difference in carbon means between the 25m2 sample plot and the other two sample plots. So let us analyze the relationship between the 77m2 and the 154m2, with a hypothesis test and see if the means in the total carbon per tree (Mg/ha) are different.
 
 **Analysis:** *Hypothesis Testing between 77m2 vs 154m2*
 
-The Null Hypothesis - The Total Carbon per Tree (mg/ha) mean in the Sample Size of 77m2 is no different from the 154m2.
+The Null Hypothesis - The Total Carbon per Tree (Mg/ha) mean in the Sample Size of 77m2 is no different from the 154m2.
 
 $$H_0: \mu_{77m2} - \mu_{154m2} = 0$$
 
-Alternative Hypothesis- The Total Carbon per Tree (mg/ha) in the sample size of 77m2 is different from the one the 154m2.
+Alternative Hypothesis- The Total Carbon per Tree (Mg/ha) in the sample size of 77m2 is different from the one the 154m2.
 
 $$H_0: \mu_{77m2} - \mu_{154m2} \neq 0$$
 
@@ -205,11 +211,11 @@ option2_ttest <- t.test(mangrove_2017$total_tree_mg_c_ha[mangrove_2017$plot_size
 option2_ttest
 ```
 
-## Results:
+### Results:
 
-**With this results we can reject the null as the p-value is very small, meaning there is a significant difference between the means on carbon storage in each tree per hectare between the sample plot size of 77m2 to the sample size of 154m2.**
+**With this results we can reject the null as the p-value is telling us there it exists a statistical significant difference between the means of carbon storage between the sample plot size of 77m2 to the sample size of 154m2.**
 
-We are 95% confident that the true value of the difference in tree carbon across the two plot sizes lies between 0.0262 - 0.0403 mg per hectare.
+We are 95% confident that the true value of the difference in tree carbon across the two plot sizes lies between 0.0262 - 0.0403 Mg per hectare.
 
 This graph summarizes all the important take away.
 
@@ -242,15 +248,16 @@ As we can see in the graph, both means are close to each other, but they are sta
 
 ## **Question 2:**
 
-Let analyze why the smaller plot is getting a larger estimate of total carbon per hectare.
+Let analyze why the smaller plots are getting a larger estimate of total carbon per hectare.
 
-For this purpose, we will create a new table and graph to easily visualize what the density per plot type (Number of trees per m2) is
+For this purpose, we will create a new table and graph to easily visualize what the density per plot type (Number of trees per m2) looks like:
 
 ```{r, message=F, warning=F}
 #Changing the column to numeric
 mangrove_df$plot_size_m2_num <- as.numeric(mangrove_df$plot_size_m2)
 
-density_df <- read_csv(here::here("data","clean_monitoring_data_javier.csv")) |> clean_names() |> 
+density_df <- read_csv("/Users/javipatron/Documents/MEDS/Courses/eds222/homework/eds222-finalproject/data/clean_monitoring_data_javier.csv") |> 
+  clean_names() |> 
   filter(plantation_year == 2017) |> 
   select(height_cm,plot, plot_size_m2, cd_chatting_m,total_tree_kg_c,total_tree_mg_c_ha) |> 
   group_by(plot, plot_size_m2) |> 
@@ -266,16 +273,17 @@ head(density_df) %>%
   kbl(align=rep('c', 5),
       caption ="Table 4. Density Table per Plot",
       position = "left") %>%
-  kable_paper("hover", full_width = F) %>%
-  kable_styling(position = "left")
+  kable_paper("hover", full_width = F)
 
-ggplot(density_df, aes(x= as.factor(plot_size_m2), y= density, fill = as.factor(plot_size_m2))) +
+density_graph <- ggplot(density_df, aes(x= as.factor(plot_size_m2), y= density, fill = as.factor(plot_size_m2))) +
   geom_boxplot(alpha = 0.7) +
   labs(title = "Density of trees per plot size",
        x= "Plot Size (m2)",
        y = "Density (Tree/m2)",
        col = "Plot Size (m2)") +
   scale_fill_discrete(name = "Plot Type")
+
+ggplotly(density_graph)
 
 ```
 
@@ -289,9 +297,9 @@ This Histogram shows how much variance we have between our plots.
 ggplot(plots_2017, aes(x=sd_tree_c_ha)) +
   geom_histogram(aes(y = stat(density)), color = "gray20", fill = "darkolivegreen", alpha = 0.7) +
   geom_density(col = "gray30", alpha = 0.15, fill = "green") +
-  labs(title = "Total Carbon per Tree (mg/ha)",
+  labs(title = "Total Carbon per Tree (Mg/ha)",
        subtitle = "All Plots",
-       x = "Tree Carbon Variance (mg/ha)",
+       x = "Tree Carbon Variance (Mg/ha)",
        y = "Denisity Plots")
 
 ```
@@ -299,15 +307,17 @@ ggplot(plots_2017, aes(x=sd_tree_c_ha)) +
 We have a skew right histogram with a long tail. Now let us analyze this same plot, but separating per plot type, to see who is responsible for those outliers.
 
 ```{r, message=F, warning=F}
-plots_2017 |> 
+histogram_plot <- plots_2017 |> 
   filter(plot_size_m2 %in% c(25.133, 76.969, 153.938)) |> 
 ggplot(aes(x=sd_tree_c_ha)) +
   geom_histogram(aes(y = stat(density), fill = plot_size_m2),color = "gray30", alpha = 0.3) +
   geom_density(aes(fill = plot_size_m2), col = "gray30", alpha = 0.8) +
-  labs(title = "Total Carbon per Tree (mg/ha)",
+  labs(title = "Total Carbon per Tree (Mg/ha)",
        subtitle = "Per Plot",
-       x = "Tree Cabron Variance (mg/ha)",
+       x = "Tree Cabron Variance (Mg/ha)",
        y = "Density Plots")
+
+ggplotly(histogram_plot)
 
 ```
 
@@ -319,7 +329,7 @@ mangrove_2017 |>
 ggplot(aes(x=total_tree_mg_c_ha)) +
   geom_histogram(aes(y = stat(density)), fill = "red", color = "gray30", alpha = 0.6) +
   geom_density(col = "gray30", alpha = 0.3, fill = "gray10") +
-  labs(title = "Total Carbon per Tree (mg/ha)",
+  labs(title = "Total Carbon per Tree (Mg/ha)",
        subtitle = "25m2")
 ```
 
@@ -331,7 +341,7 @@ mangrove_2017 |>
 ggplot(aes(x=total_tree_mg_c_ha)) +
   geom_histogram(aes(y = stat(density)), fill = "lightgreen", color = "gray30") +
   geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
-  labs(title = "Total Carbon per Tree (mg/ha)",
+  labs(title = "Total Carbon per Tree (Mg/ha)",
        subtitle = "77m2")
 ```
 
@@ -343,7 +353,7 @@ mangrove_2017 |>
 ggplot(aes(x=total_tree_mg_c_ha)) +
   geom_histogram(aes(y = stat(density)), fill = "lightblue", color = "gray30") +
   geom_density(col = "gray30", alpha = 0.5, fill = "gray10") +
-  labs(title = "Total Carbon per Tree (mg/ha)",
+  labs(title = "Total Carbon per Tree (Mg/ha)",
        subtitle = "154m2")
 
 ```
@@ -379,13 +389,15 @@ First, we need to understand and visualize the overlaps that we currently have b
 
 ```{r, message=F, warning=F}
 #Total Tree Carbon (mg/ha)
-mangrove_2017 |> 
+histogram_all <- mangrove_2017 |> 
   filter(plot_size_m2 %in% c(25.133, 76.969, 153.938)) |> 
 ggplot(aes(x=total_tree_mg_c_ha)) +
   geom_histogram(aes(y = stat(density), fill = plot_size_m2),color = "gray30", alpha = 0.3) +
   geom_density(aes(fill = plot_size_m2), col = "gray30", alpha = 0.8) +
   labs(title = "Histogram of Carbon per Tree (Mg/ha)",
        subtitle = "2017")
+
+ggplotly(histogram_all)
   
 ```
 
@@ -399,7 +411,7 @@ ggplot(mangrove_2017, aes(x=total_tree_mg_c_ha, color = plot_size_m2)) +
   geom_freqpoly(aes(y = stat(density))) +
   labs(title = "Frequency Polygon",
     subtitle = "Invisible Histogram to see overlaps between Sample Size",
-       x = "Total Carbon per Tree (mg/ha)",
+       x = "Total Carbon per Tree (Mg/ha)",
        y = "Density")
 ```
 
@@ -515,6 +527,13 @@ random_sd_154m = power_table_test[[3,5]]
 #Real Difference 
 random_effect_size_a = (random_mean_25m - random_mean_154m) / (as.numeric(sqrt(random_sd_25m^2/2 + random_sd_154m^2/2)))
 
+
+random_power_test <- pwr.t.test(d = random_effect_size_a, 
+                           n = samples, 
+                           sig.level = 0.05,
+                           type="two.sample",
+                           alternative="two.sided")
+
 print(effect_size_a)
 print(random_effect_size_a)
 
@@ -534,11 +553,11 @@ ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plo
                         guide = guide_legend(
                           override.aes = list(
                             color = c("gray50", "gray10")))) +
-  labs(title = "Total Cabron per Tree (mg/ha)",
+  labs(title = "Total Cabron per Tree (Mg/ha)",
        subtitle = "Random sample size",
        x = "Plot Type",
        y = "Total Tree Carbon (mg/ha)",
-       caption = paste("Difference between the real sample means is:",round(mean_difference_a,2),"(mg/ha)" ,"\nDifference between the randomly relected samples mean is:", round((random_mean_25m - random_mean_154m),2), "(mg/ha)"))
+       caption = paste("Difference between the real sample means is:",round(mean_difference_a,2),"(Mg/ha)" ,"\nDifference between the randomly relected samples mean is:", round((random_mean_25m - random_mean_154m),2), "(Mg/ha)", "\nPower:", round(random_power_test$power,2)))
   
   
 ```
@@ -568,6 +587,13 @@ random_sd_154m = power_table_test[[3,5]]
 #Real Difference 
 random_effect_size_b = (random_mean_77m - random_mean_154m) / (as.numeric(sqrt(random_sd_77m^2/2 + random_sd_154m^2/2)))
 
+random_power_test_b <- pwr.t.test(d = random_effect_size_b, 
+                           n = samples, 
+                           sig.level = 0.05,
+                           type="two.sample",
+                           alternative="two.sided")
+
+
 print(effect_size_b)
 print(random_effect_size_b)
 
@@ -587,10 +613,11 @@ ggplot(random_table_test, aes(x= plot_size_m2, y = total_tree_mg_c_ha, col = plo
                         guide = guide_legend(
                           override.aes = list(
                             color = c("gray50", "gray10")))) +
-  labs(title = "Total Cabron per Tree (mg/ha)",
+  labs(title = "Total Cabron per Tree (Mg/ha)",
        subtitle = "Random sample size",
        x = "Plot Type",
        y = "Total Tree Carbon (mg/ha)",
-       caption = paste("Difference between the real sample means is:",round(mean_difference_b,2),"(mg/ha)" ,"\nDifference between the randomly relected samples mean is:", round((random_mean_77m - random_mean_154m),2), "(mg/ha)"))
+       caption = paste("Difference between the real sample means is:",round(mean_difference_b,2),"(Mg/ha)" ,"\nDifference between the randomly relected samples mean is:", round((random_mean_77m - random_mean_154m),2), "(Mg/ha)","\nPower:", round(random_power_test_b$power,2)))
 
 ```
+
